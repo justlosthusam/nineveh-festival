@@ -671,46 +671,105 @@ function renderUnified800SeatsGrid() {
     container.appendChild(hallWrapper);
 
   } else {
-    // Outdoor Mode: 4000 seats grid
-    populateOutdoorDropdown();
+    // Outdoor Mode: 4000 Organized Seats across 4 Sectors
     const outdoorSeats = seatsData.filter(s => s.type === 'outdoor' || s.block === 'صيفي');
     
-    const startIdx = (outdoorPage - 1) * OUTDOOR_PAGE_SIZE;
-    const endIdx = Math.min(startIdx + OUTDOOR_PAGE_SIZE, outdoorSeats.length);
-    const pageSeats = outdoorSeats.slice(startIdx, endIdx);
+    if (!window.currentOutdoorSector) window.currentOutdoorSector = 1;
+    if (!window.outdoorSectorPage) window.outdoorSectorPage = 1;
+    
+    const SECTOR_SIZE = 1000;
+    const PAGE_SIZE = 100;
+    const sectorStart = (window.currentOutdoorSector - 1) * SECTOR_SIZE;
+    const sectorSeats = outdoorSeats.slice(sectorStart, sectorStart + SECTOR_SIZE);
+    const maxSectorPages = Math.ceil(sectorSeats.length / PAGE_SIZE) || 1;
+    if (window.outdoorSectorPage > maxSectorPages) window.outdoorSectorPage = maxSectorPages;
+    if (window.outdoorSectorPage < 1) window.outdoorSectorPage = 1;
 
+    const pageStart = (window.outdoorSectorPage - 1) * PAGE_SIZE;
+    const pageEnd = Math.min(pageStart + PAGE_SIZE, sectorSeats.length);
+    const pageSeats = sectorSeats.slice(pageStart, pageEnd);
+
+    // Update active sector buttons
+    for (let sIdx = 1; sIdx <= 4; sIdx++) {
+      const btn = document.getElementById(`sector-btn-${sIdx}`);
+      if (btn) {
+        btn.className = (sIdx === window.currentOutdoorSector) ? "outdoor-sector-btn active" : "outdoor-sector-btn";
+      }
+    }
+
+    const outWrapper = document.createElement('div');
+    outWrapper.className = 'w-full space-y-3';
+
+    // Pagination Bar
     const pagWrapper = document.createElement('div');
-    pagWrapper.className = 'flex items-center justify-between text-xs text-yellow-200 font-bold mb-2 px-1';
+    pagWrapper.className = 'flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-yellow-200 font-bold bg-black/60 p-2.5 rounded-xl border border-yellow-700/30';
     pagWrapper.innerHTML = `
-      <span>عرض المقاعد الصيفية من ${startIdx + 1} إلى ${endIdx} (من إجمالي 4،000)</span>
-      <div class="flex gap-1.5">
-        <button type="button" onclick="changeOutdoorPageWizard(-1)" class="px-2.5 py-1 bg-white/10 rounded hover:bg-white/20">السابقة</button>
-        <button type="button" onclick="changeOutdoorPageWizard(1)" class="px-2.5 py-1 bg-white/10 rounded hover:bg-white/20">التالية</button>
+      <div class="flex items-center gap-2">
+        <span class="text-gold-matte font-black">القطاع ${window.currentOutdoorSector}</span>
+        <span class="text-gray-400">|</span>
+        <span>المقاعد من <b class="text-yellow-300 font-mono">${sectorStart + pageStart + 1}</b> إلى <b class="text-yellow-300 font-mono">${sectorStart + pageEnd}</b></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-[11px] text-gray-400">صفحة ${window.outdoorSectorPage} من ${maxSectorPages}</span>
+        <div class="flex gap-1.5">
+          <button type="button" onclick="changeOutdoorPageWizard(-1)" class="px-3 py-1 bg-white/10 text-white rounded-lg hover:bg-yellow-600 hover:text-black transition-all ${window.outdoorSectorPage <= 1 ? 'opacity-40 cursor-not-allowed' : ''}">السابقة</button>
+          <button type="button" onclick="changeOutdoorPageWizard(1)" class="px-3 py-1 bg-white/10 text-white rounded-lg hover:bg-yellow-600 hover:text-black transition-all ${window.outdoorSectorPage >= maxSectorPages ? 'opacity-40 cursor-not-allowed' : ''}">التالية</button>
+        </div>
       </div>
     `;
-    container.appendChild(pagWrapper);
+    outWrapper.appendChild(pagWrapper);
 
-    const gridDiv = document.createElement('div');
-    gridDiv.className = 'grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-96 overflow-y-auto p-2 bg-black/40 rounded-xl border border-yellow-700/20';
+    // Group page seats into spacious neat rows (20 seats per row)
+    const SEATS_PER_ROW = 20;
+    const rowCardsContainer = document.createElement('div');
+    rowCardsContainer.className = 'space-y-3 max-h-[520px] overflow-y-auto pr-1';
 
-    pageSeats.forEach(seat => {
-      const seatEl = document.createElement('div');
-      const isSelected = selectedSeats.includes(seat.code);
-      
-      seatEl.id = `seat-btn-outdoor-${seat.number}`;
-      seatEl.className = `seat ${seat.status} ${isSelected ? 'selected' : ''} !w-full !h-9 text-xs font-bold rounded-lg flex items-center justify-center cursor-pointer select-none`;
-      seatEl.title = `المقعد الصيفي رقم ${seat.number}`;
-      seatEl.textContent = seat.number;
+    for (let rIdx = 0; rIdx < pageSeats.length; rIdx += SEATS_PER_ROW) {
+      const rowSeats = pageSeats.slice(rIdx, rIdx + SEATS_PER_ROW);
+      const rowCard = document.createElement('div');
+      rowCard.className = 'outdoor-row-card';
 
-      if (seat.status === 'available') {
-        seatEl.onclick = () => toggleWizardSeatSelection(seat.code);
-      }
+      const rowHeader = document.createElement('div');
+      rowHeader.className = 'outdoor-row-header';
+      const firstNum = rowSeats[0].number;
+      const lastNum = rowSeats[rowSeats.length - 1].number;
+      const rowNum = rowSeats[0].row || Math.ceil(firstNum / 80);
+      rowHeader.innerHTML = `
+        <span>📌 الصف ${rowNum} — المقاعد (${firstNum} إلى ${lastNum})</span>
+        <span class="text-[11px] text-gray-300">متباعدة ومنظمة</span>
+      `;
+      rowCard.appendChild(rowHeader);
 
-      gridDiv.appendChild(seatEl);
-    });
+      const seatsGrid = document.createElement('div');
+      seatsGrid.className = 'outdoor-seats-row-flex';
 
-    container.appendChild(gridDiv);
+      rowSeats.forEach(seat => {
+        const isSelected = selectedSeats.includes(seat.code);
+        const seatEl = document.createElement('div');
+        seatEl.id = `seat-btn-outdoor-${seat.number}`;
+        seatEl.className = `seat-outdoor-item ${seat.status} ${isSelected ? 'selected' : ''}`;
+        seatEl.title = `المقعد الصيفي ${seat.number}`;
+        seatEl.textContent = seat.number;
+
+        if (seat.status === 'available') {
+          seatEl.onclick = () => toggleWizardSeatSelection(seat.code);
+        }
+        seatsGrid.appendChild(seatEl);
+      });
+
+      rowCard.appendChild(seatsGrid);
+      rowCardsContainer.appendChild(rowCard);
+    }
+
+    outWrapper.appendChild(rowCardsContainer);
+    container.appendChild(outWrapper);
   }
+}
+
+function setOutdoorSector(sectorNum) {
+  window.currentOutdoorSector = sectorNum;
+  window.outdoorSectorPage = 1;
+  renderUnified800SeatsGrid();
 }
 
 function jumpToOutdoorSeatWizard() {
@@ -721,24 +780,35 @@ function jumpToOutdoorSeatWizard() {
     alert('يرجى كتابة رقم مقعد صحيح بين 1 و 4000');
     return;
   }
-  outdoorPage = Math.ceil(num / OUTDOOR_PAGE_SIZE);
+  
+  if (currentWizardSeatTab !== 'outdoor') {
+    switchWizardSeatTab('outdoor');
+  }
+
+  const targetSector = Math.ceil(num / 1000);
+  window.currentOutdoorSector = targetSector;
+  
+  const offsetInSector = (num - 1) % 1000;
+  window.outdoorSectorPage = Math.floor(offsetInSector / 100) + 1;
+  
   renderUnified800SeatsGrid();
 
   setTimeout(() => {
     const el = document.getElementById(`seat-btn-outdoor-${num}`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('ring-4', 'ring-yellow-400');
-      setTimeout(() => el.classList.remove('ring-4', 'ring-yellow-400'), 3000);
+      el.classList.add('ring-4', 'ring-yellow-400', 'scale-110');
+      setTimeout(() => el.classList.remove('ring-4', 'ring-yellow-400', 'scale-110'), 3500);
     }
-  }, 150);
+  }, 200);
 }
 
 function changeOutdoorPageWizard(dir) {
-  const maxPages = Math.ceil(4000 / OUTDOOR_PAGE_SIZE);
-  outdoorPage += dir;
-  if (outdoorPage < 1) outdoorPage = 1;
-  if (outdoorPage > maxPages) outdoorPage = maxPages;
+  const maxPages = 10;
+  if (!window.outdoorSectorPage) window.outdoorSectorPage = 1;
+  window.outdoorSectorPage += dir;
+  if (window.outdoorSectorPage < 1) window.outdoorSectorPage = 1;
+  if (window.outdoorSectorPage > maxPages) window.outdoorSectorPage = maxPages;
   renderUnified800SeatsGrid();
 }
 
@@ -1612,6 +1682,15 @@ function renderTicketCardIndex(index) {
 
   }
 
+  const noticeEl = document.getElementById('ticketBarcodeNotice') || document.querySelector('#printableTicket .border-t') || document.querySelector('#ticketPrintArea .border-t');
+  if (noticeEl) {
+    if (currentTicketIsApproved) {
+      noticeEl.innerHTML = '<span class="text-green-300 font-bold">✓ تذكرة معتمدة رسمياً — يرجى إبراز هذا الباركود عند بوابة الدخول</span>';
+    } else {
+      noticeEl.innerHTML = '<span class="text-amber-300 font-bold">⏳ بانتظار مراجعة المنظمين — سيتم تفعيل الباركود وتأكيده رسمياً فور الموافقة</span>';
+    }
+  }
+
 }
 
 
@@ -1851,11 +1930,9 @@ async function handleUnifiedFormSubmit(e) {
       onUnifiedPersonCountChange(1);
       fetchSeats();
 
-      if (b.status === 'approved' || isOutdoor) {
-        showMultiTicketModal(b.attendees, b.id, `${LIVE_SERVER_URL}/pdfs/${b.id}.pdf`, true);
-      } else {
-        showPendingSubmissionConfirmation(b);
-      }
+      const isApproved = (b.status === 'approved' || isOutdoor);
+      const atts = (b.attendees && b.attendees.length > 0) ? b.attendees : [{ name: b.name, category: b.category, seatCode: (b.seatCodes || [])[0] }];
+      showMultiTicketModal(atts, b.id, `/pdfs/${b.id}.pdf`, isApproved);
     } else {
       alert(data.message || data.error || 'حدث خطأ أثناء حفظ الحجز');
     }
@@ -1881,10 +1958,15 @@ async function handleUnifiedFormSubmit(e) {
     onUnifiedPersonCountChange(1);
     fetchSeats();
 
-    if (isOutdoor) {
-      showMultiTicketModal(attendeesList, offlineId, `#`, true);
-    } else {
-      showPendingSubmissionConfirmation(offlineBooking);
-    }
+    showMultiTicketModal(attendeesList, offlineId, `#`, isOutdoor);
   }
 }
+
+function promptCheckTicket() {
+  const tid = prompt('يرجى إدخال رقم التذكرة (مثال: NIFF2-XXXX) أو رقم هاتفك:');
+  if (!tid) return;
+  const clean = tid.trim();
+  if (!clean) return;
+  window.location.href = `/?ticket=${encodeURIComponent(clean)}`;
+}
+

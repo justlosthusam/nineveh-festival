@@ -4,6 +4,7 @@ import json
 import http.server
 import socketserver
 import urllib.parse
+import urllib.request
 from datetime import datetime
 import threading, queue, time
 import smtplib
@@ -17,7 +18,7 @@ if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
 PORT = int(os.environ.get("PORT", "8080"))
-BASE_URL = os.environ.get("BASE_URL", "").rstrip("/") or f"http://localhost:{PORT}"
+BASE_URL = os.environ.get("BASE_URL", "").rstrip("/") or "https://nineveh-festival.onrender.com"
 import secrets, hmac
 _KEY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "admin_key.txt")
 def _load_admin_key():
@@ -187,6 +188,107 @@ def send_email_with_pdf(booking, pdf_path):
             print(f"[EMAIL SUMMARY] Email payload generated for {ORGANIZER_EMAIL} with PDF attached: {pdf_path}")
     except Exception as e:
         print(f"[EMAIL ERROR] {e}")
+
+# Send Telegram Notification with PDF Document & Approval Buttons
+def send_telegram_notification(booking, pdf_path=None):
+    try:
+        cfg_file = os.path.join(PROJECT_DIR, "telegram_config.json")
+        token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+        chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+        if os.path.exists(cfg_file):
+            try:
+                with open(cfg_file, "r", encoding="utf-8") as f:
+                    c = json.load(f)
+                    token = token or c.get("bot_token", "").strip()
+                    chat_id = chat_id or str(c.get("chat_id", "")).strip()
+            except Exception:
+                pass
+
+        if not token or not chat_id:
+            print("[TELEGRAM] Missing bot_token or chat_id. Skipping.")
+            return
+
+        ticket_id = booking.get("id", "NIFF2-000")
+        name = booking.get("name", "")
+        phone = booking.get("phone", "")
+        category = booking.get("category", "مواطن")
+        seats = ", ".join(booking.get("seatCodes", []))
+        
+        base = BASE_URL.rstrip('/')
+        approve_url = f"{base}/api/admin/approve-email?id={ticket_id}&key={urllib.parse.quote(ADMIN_KEY)}"
+        admin_url = f"{base}/admin?key={urllib.parse.quote(ADMIN_KEY)}"
+        pdf_url = f"{base}/pdfs/{ticket_id}.pdf"
+
+        text = (
+            f"🎬 <b>طلب حجز جديد — مهرجان نينوى السينمائي الدولي</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━\n"
+            f"🎫 <b>رقم الحجز:</b> <code>{ticket_id}</code>\n"
+            f"👤 <b>اسم المسجل:</b> {name}\n"
+            f"📞 <b>رقم الهاتف:</b> <code>{phone}</code>\n"
+            f"🏷️ <b>الصفة:</b> {category}\n"
+            f"💺 <b>المقاعد المطلوبة:</b> <b>{seats}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━\n"
+            f"⚡ <i>اضغط على الزر أدناه للموافقة وتثبيت المقاعد فوراً:</i>"
+        )
+
+        inline_keyboard = {
+            "inline_keyboard": [
+                [
+                    {"text": "✅ موافقة وإقرار الحجز", "url": approve_url}
+                ],
+                [
+                    {"text": "📄 تحميل ملف الـ PDF", "url": pdf_url},
+                    {"text": "📊 لوحة الأدمن", "url": admin_url}
+                ]
+            ]
+        }
+
+        # 1. Send Instant Text Message with Action Buttons
+        msg_payload = {
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": "HTML",
+            "reply_markup": inline_keyboard
+        }
+        req = urllib.request.Request(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data=json.dumps(msg_payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+        )
+        urllib.request.urlopen(req, timeout=10)
+        print(f"[TELEGRAM] Notification text sent successfully to {chat_id}")
+
+        # 2. Upload the actual PDF Document directly into Telegram Chat
+        if pdf_path and os.path.exists(pdf_path):
+            try:
+                boundary = "----WebKitFormBoundary" + secrets.token_hex(16)
+                body = bytearray()
+                body.extend(f"--{boundary}\r\nContent-Disposition: form-data; name=\"chat_id\"\r\n\r\n{chat_id}\r\n".encode("utf-8"))
+                body.extend(f"--{boundary}\r\nContent-Disposition: form-data; name=\"caption\"\r\n\r\nملف الـ PDF الرسمي للحجز {ticket_id} - {name}\r\n".encode("utf-8"))
+                filename = os.path.basename(pdf_path)
+                body.extend(f"--{boundary}\r\nContent-Disposition: form-data; name=\"document\"; filename=\"{filename}\"\r\nContent-Type: application/pdf\r\n\r\n".encode("utf-8"))
+                with open(pdf_path, "rb") as pf:
+                    body.extend(pf.read())
+                body.extend(f"\r\n--{boundary}--\r\n".encode("utf-8"))
+
+                doc_req = urllib.request.Request(
+                    f"https://api.telegram.org/bot{token}/sendDocument",
+                    data=body,
+                    headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}
+                )
+                urllib.request.urlopen(doc_req, timeout=15)
+                print(f"[TELEGRAM] PDF document uploaded successfully to {chat_id}")
+            except Exception as pe:
+                print(f"[TELEGRAM PDF ERROR] {pe}")
+
+    except Exception as e:
+        err_msg = ""
+        if hasattr(e, "read"):
+            try: err_msg = " -> " + e.read().decode("utf-8")
+            except Exception: pass
+        print(f"[TELEGRAM ERROR] {e}{err_msg}")
+
+
 
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def translate_path(self, path):
@@ -458,13 +560,13 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                     formatted_phone = "964" + clean_phone
 
                 host = self.headers.get("Host", "sociology-mutual-skirt-invitation.trycloudflare.com")
-                scheme = "https" if ("trycloudflare.com" in host or "workers.dev" in host or "pages.dev" in host) else "http"
+                scheme = "https" if ("trycloudflare.com" in host or "onrender.com" in host or "workers.dev" in host or "pages.dev" in host) else "http"
                 server_origin = f"{scheme}://{host}"
 
                 main_seat = (booking.get("seatCodes") or ["R1-S01"])[0]
                 pdf_public_url = f"{server_origin}/pdfs/{booking['id']}.pdf"
                 ticket_public_url = f"{server_origin}/?ticket={booking['id']}&name={urllib.parse.quote(booking['name'])}&seat={urllib.parse.quote(main_seat)}"
-                wa_msg = f"أهلاً وسهلاً بك في مهرجان نينوى السينمائي الدولي (الدورة الثانية)! \nتمت موافقة وإقرار حجزكم وتأكيد المقاعد رسمياً \n\n رقم التذكرة: {booking['id']}\n اسم المسجل: {booking['name']}\n المقعد المخصص: {', '.join(booking.get('seatCodes', []))}\n\n رابط تنزيل ملف الـ PDF الرسمي بالتذكرة والباركود:\n{pdf_public_url}\n\n أو اضغط هنا لعرض التذكرة والباركود المعتمد:\n{ticket_public_url}"
+                wa_msg = f"أهلاً وسهلاً بك في مهرجان نينوى السينمائي الدولي (الدورة الثانية)! 🎬🎟️\nتمت الموافقة وتأكيد حجز مقعدكم رسمياً ✅\n\n🎫 رقم التذكرة: {booking['id']}\n👤 الاسم: {booking['name']}\n💺 المقعد المعتمد: {', '.join(booking.get('seatCodes', []))}\n\n📲 اضغط على الرابط التالي لعرض تذكرتك الرسمية والباركود والشعار:\n{ticket_public_url}\n\n📄 أو اضغط هنا لتنزيل ملف الـ PDF الرسمي بالتذكرة:\n{pdf_public_url}"
                 wa_send_url = f"https://api.whatsapp.com/send?phone={formatted_phone}&text={urllib.parse.quote(wa_msg)}"
 
                 html_resp = f"""
@@ -571,8 +673,12 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             # Generate PDF Registration Document
             pdf_path, pdf_filename = pdf_generator.create_booking_pdf(booking)
 
-            # Dispatch Email to husamalsiayd@gmail.com
+            # Dispatch Email
             send_email_with_pdf(booking, pdf_path)
+
+            # Dispatch Telegram Notification & PDF
+            send_telegram_notification(booking, pdf_path)
+
 
             self._send_json({
                 "success": True,

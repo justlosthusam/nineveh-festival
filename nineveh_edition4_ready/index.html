@@ -38,14 +38,18 @@
 
     <!-- Top Header Bar (Centered title & logo) -->
     <header class="glass-panel sticky top-0 z-40 border-b border-yellow-700/20 px-4 py-3 text-center">
-      <div class="max-w-4xl mx-auto flex flex-col items-center justify-center gap-1 cursor-pointer" onclick="goToStep(1)">
-        <img src="assets/emblem.png?v=5" alt="شعار المهرجان" class="h-10 w-auto mb-1">
-        <h1 class="text-xl md:text-2xl font-bold text-gold-matte tracking-wide">
+      <div class="max-w-4xl mx-auto flex flex-col items-center justify-center gap-1 cursor-pointer">
+        <img src="assets/emblem.png?v=5" alt="شعار المهرجان" class="h-10 w-auto mb-1" onclick="window.location.reload()">
+        <h1 class="text-xl md:text-2xl font-bold text-gold-matte tracking-wide" onclick="window.location.reload()">
           مهرجان نينوى السينمائي الدولي - الدورة الثانية
         </h1>
         <p class="text-xs text-yellow-100/70 font-serif">
-          منظومة التسجيل وحجز المقاعد الإلكترونية (800 مقعد)
+          منظومة التسجيل وحجز المقاعد وتوثيق التذاكر الإلكترونية
         </p>
+        <button type="button" onclick="promptCheckTicket()" class="mt-1.5 px-3.5 py-1 bg-yellow-600/20 text-yellow-300 border border-yellow-500/30 rounded-full text-[11px] font-bold hover:bg-yellow-600 hover:text-black transition-all flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-qrcode"></i>
+          <span>استعلام عن تذكرة / فحص الباركود</span>
+        </button>
       </div>
     </header>
 
@@ -66,7 +70,7 @@
 
             <button type="button" id="btn-cat-outdoor" onclick="selectBookingCategory('outdoor')" class="p-4 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center gap-1 bg-black/60 text-yellow-200 border-yellow-700/40 hover:bg-white/10">
               <span class="text-base font-extrabold">المقاعد الخارجية</span>
-              <span class="text-[11px] text-gray-400 font-normal">المقاعد الصيفية الخارجية (من 1 إلى 2000)</span>
+              <span class="text-[11px] text-gray-400 font-normal">المقاعد الصيفية الخارجية (4,000 مقعد متباعدة)</span>
             </button>
           </div>
         </div>
@@ -141,16 +145,26 @@
               </div>
 
               <!-- Outdoor Seats Selection Dropdown (visible when Outdoor Mode active) -->
-              <div id="outdoorSearchBox" class="hidden glass-panel p-4 rounded-xl border border-yellow-700/30 text-center space-y-3">
-                <h4 class="text-xs md:text-sm text-yellow-200 font-bold">تحديد مقعد خارجي (من 1 إلى 2000)</h4>
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
-                  <select id="outdoorSeatDropdown" onchange="selectOutdoorSeatFromDropdown(this.value)" class="w-full sm:w-auto flex-1 bg-black/80 border border-yellow-700/50 rounded-lg px-3 py-2 text-xs text-yellow-200 focus:outline-none focus:border-yellow-400">
-                    <option value="">-- اختر رقم المقعد الخارجي (1 - 2000) --</option>
-                  </select>
-                  <div class="flex items-center gap-1.5 w-full sm:w-auto">
-                    <input type="number" id="outdoorSearchInput" min="1" max="2000" placeholder="ادخل رقم (1-2000)" class="w-full sm:w-36 bg-black/70 border border-yellow-700/40 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400">
-                    <button type="button" onclick="jumpToOutdoorSeatWizard()" class="px-3 py-2 bg-gold-matte text-black font-bold text-xs rounded-lg hover:scale-105 transition-transform whitespace-nowrap">تحديد</button>
-                  </div>
+              <div id="outdoorSearchBox" class="hidden glass-panel p-4 rounded-2xl border border-yellow-700/30 text-center space-y-3.5">
+                <div class="flex items-center justify-between border-b border-yellow-700/20 pb-2">
+                  <h4 class="text-xs md:text-sm text-yellow-200 font-extrabold flex items-center gap-1.5">
+                    <span>🎪 خريطة المقاعد الصيفية الخارجية (4,000 مقعد متباعدة)</span>
+                  </h4>
+                  <span class="text-[10px] text-gold-matte bg-black/60 px-2.5 py-1 rounded-full border border-yellow-700/30">مقسمة لـ 4 قطاعات</span>
+                </div>
+
+                <!-- Quick Search Input (1 - 4000) -->
+                <div class="flex items-center justify-center gap-2 max-w-sm mx-auto">
+                  <input type="number" id="outdoorSearchInput" min="1" max="4000" placeholder="اكتب رقم المقعد (1 - 4000)" class="w-full bg-black/80 border border-yellow-700/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400 text-center font-bold">
+                  <button type="button" onclick="jumpToOutdoorSeatWizard()" class="px-5 py-2 bg-gold-matte text-black font-extrabold text-xs rounded-xl hover:scale-105 transition-transform whitespace-nowrap shadow-md">تحديد المقعد</button>
+                </div>
+
+                <!-- Sector Tabs (4 Sectors: 1000 each) -->
+                <div class="flex flex-wrap justify-center gap-2 pt-1" id="outdoorSectorTabs">
+                  <button type="button" onclick="setOutdoorSector(1)" id="sector-btn-1" class="outdoor-sector-btn active">القطاع 1 (1 - 1000)</button>
+                  <button type="button" onclick="setOutdoorSector(2)" id="sector-btn-2" class="outdoor-sector-btn">القطاع 2 (1001 - 2000)</button>
+                  <button type="button" onclick="setOutdoorSector(3)" id="sector-btn-3" class="outdoor-sector-btn">القطاع 3 (2001 - 3000)</button>
+                  <button type="button" onclick="setOutdoorSector(4)" id="sector-btn-4" class="outdoor-sector-btn">القطاع 4 (3001 - 4000)</button>
                 </div>
               </div>
 
@@ -258,7 +272,7 @@
             <svg id="barcodeSvg" class="w-full h-14 mx-auto"></svg>
           </div>
 
-          <div class="pt-1 border-t border-yellow-600/20 text-[10px] text-yellow-200/80 font-bold">
+          <div id="ticketBarcodeNotice" class="pt-1 border-t border-yellow-600/20 text-[10px] text-yellow-200/80 font-bold">
             يرجى إبراز هذا الباركود عند بوابة المسرح الرئيسي للدخول
           </div>
         </div>
