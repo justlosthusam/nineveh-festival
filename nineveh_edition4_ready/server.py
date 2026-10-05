@@ -364,7 +364,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 <div class="flex items-center justify-between border-b border-yellow-700/30 pb-4">
                   <div>
                     <h1 class="text-2xl font-bold text-gold-matte">لوحة إدارة وموافقات الحجوزات وملفات الـ PDF</h1>
-                    <p class="text-xs text-gray-300">مهرجان نينوى السينمائي الدولي - الدورة الثانية (الإيميل المستهدف: husamalsiayd@gmail.com)</p>
+                    <p class="text-xs text-gray-300">مهرجان نينوى السينمائي الدولي - الدورة الثانية</p>
                   </div>
                   <a href="/index.html" class="px-4 py-2 bg-white/10 text-xs rounded-xl font-bold hover:bg-white/20">← العودة للموقع</a>
                 </div>
@@ -578,7 +578,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 "success": True,
                 "ticket": booking,
                 "pdfUrl": f"/pdfs/{pdf_filename}",
-                "message": f"تم تسجيل طلب الحجز بنجاح وتوليد ملف الـ PDF. إشعار الموافقة موجه إلى {ORGANIZER_EMAIL}"
+                "message": "سيتم مراجعة طلبكم من قبل المنظمين"
             })
             return
 

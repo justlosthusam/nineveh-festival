@@ -232,25 +232,101 @@ input[type="text"], input[type="tel"] {
 
 
 /* ===== خريطة القاعة ===== */
-.hall-map { direction:ltr; display:flex; flex-direction:column; gap:28px; align-items:center; padding:20px 16px 30px; min-width:max-content; }
-.hall-top, .hall-bottom { display:flex; justify-content:center; align-items:flex-start; gap:18px; width:100%; }
-
-.hall-block { transform:none; flex:0 0 auto; display:flex; flex-direction:column; gap:3px; align-items:center;
-  padding:10px 8px; border:1px solid rgba(197,160,89,.18); border-radius:12px; background:rgba(0,0,0,.25); }
-.hall-block-title { display:flex; gap:10px; align-items:baseline; margin-bottom:6px; }
-.hall-block-letter { font-size:1.6rem; font-weight:900; color:var(--gold-primary); line-height:1; }
-.hall-block-count { font-size:.65rem; color:var(--gold-light); opacity:.75; }
-.hall-row { display:flex; align-items:center; gap:6px; }
-.hall-row-label { width:18px; text-align:center; font-size:.65rem; font-weight:800; color:rgba(250,204,21,.75); }
-.hall-row-seats { display:flex; gap:3px; direction:ltr; }
-.hall-sector-a { align-self:center; min-width:260px; padding:40px 16px; text-align:center; font-weight:700; font-size:.75rem;
-  color:rgba(255,255,255,.35); border:2px dashed rgba(255,255,255,.15); border-radius:14px; }
-.seat.pending { background:rgba(245,158,11,.25) !important; color:#fcd34d !important; border-color:rgba(245,158,11,.5) !important; cursor:not-allowed; }
-
-#unifiedSeatsGrid { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-@media (max-width: 900px) {
-  .hall-top, .hall-bottom { flex-direction:column; align-items:center; gap:18px; }
-  .hall-map { min-width:0; }
-  .hall-sector-a { min-width:0; width:100%; padding:18px 10px; }
-  .seat { width:26px; height:26px; }
+.hall-map { 
+  direction: ltr; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 24px; 
+  align-items: center; 
+  padding: 16px 12px 28px; 
+  min-width: max-content; 
+  margin: 0 auto;
 }
+.hall-top, .hall-bottom { 
+  display: flex; 
+  justify-content: center; 
+  align-items: flex-start; 
+  gap: 16px; 
+  width: 100%; 
+}
+
+.hall-block { 
+  flex: 0 0 auto; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 3px; 
+  align-items: center;
+  padding: 10px 8px; 
+  border: 1px solid rgba(197,160,89,.22); 
+  border-radius: 12px; 
+  background: rgba(0,0,0,.35); 
+}
+.hall-block-title { display: flex; gap: 8px; align-items: baseline; margin-bottom: 6px; }
+.hall-block-letter { font-size: 1.5rem; font-weight: 900; color: var(--gold-primary); line-height: 1; }
+.hall-block-count { font-size: .65rem; color: var(--gold-light); opacity: .75; }
+.hall-row { display: flex; align-items: center; gap: 5px; }
+.hall-row-label { width: 16px; text-align: center; font-size: .65rem; font-weight: 800; color: rgba(250,204,21,.8); }
+.hall-row-seats { display: flex; gap: 3px; direction: ltr; }
+.hall-sector-a { 
+  align-self: center; 
+  min-width: 220px; 
+  padding: 30px 14px; 
+  text-align: center; 
+  font-weight: 700; 
+  font-size: .75rem;
+  color: rgba(255,255,255,.4); 
+  border: 2px dashed rgba(255,255,255,.2); 
+  border-radius: 14px; 
+}
+.seat.pending { background: rgba(245,158,11,.25) !important; color: #fcd34d !important; border-color: rgba(245,158,11,.5) !important; cursor: not-allowed; }
+
+#unifiedSeatsGrid { 
+  width: 100%;
+  overflow-x: auto; 
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch; 
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  direction: ltr; /* Keeps theater columns in natural LTR flow and fixes RTL mobile scroll displacement */
+  padding: 10px 4px;
+}
+
+@media (max-width: 768px) {
+  #unifiedSeatsGrid { 
+    justify-content: flex-start; 
+    padding: 10px 8px;
+  }
+  .hall-map { 
+    gap: 16px; 
+    padding: 8px 4px 16px;
+    margin: 0 auto;
+  }
+  .hall-top, .hall-bottom { 
+    gap: 10px; 
+    justify-content: center;
+  }
+  .hall-block { 
+    padding: 6px 4px; 
+    gap: 2px;
+    border-radius: 8px;
+  }
+  .hall-block-letter { font-size: 1.15rem; }
+  .hall-block-count { font-size: .55rem; }
+  .hall-row { gap: 3px; }
+  .hall-row-label { width: 13px; font-size: .55rem; }
+  .hall-row-seats { gap: 2px; }
+  .seat { 
+    width: 20px; 
+    height: 20px; 
+    font-size: .52rem; 
+    border-radius: 3px; 
+  }
+  .hall-sector-a { 
+    min-width: 130px; 
+    padding: 16px 8px; 
+    font-size: .62rem; 
+    border-radius: 8px; 
+  }
+}
+

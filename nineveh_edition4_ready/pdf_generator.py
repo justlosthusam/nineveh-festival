@@ -41,7 +41,7 @@ def create_booking_pdf(booking):
     details = [
         ("Full Name (Primary)", booking.get("name", "")),
         ("Contact Phone", booking.get("phone", "")),
-        ("Target Organizer Email", "husamalsiayd@gmail.com"),
+        ("Organizer", "Nineveh Film Festival Committee"),
         ("Category / Type", booking.get("category", "Festival Guest")),
         ("Organization / Media", booking.get("organization", "-") or "-"),
         ("Requested Seats Count", str(booking.get("personsCount", 1))),

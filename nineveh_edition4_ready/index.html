@@ -155,9 +155,12 @@
               </div>
 
               <!-- Seats Map Container -->
-              <div class="glass-panel rounded-2xl p-4 overflow-x-auto relative border border-yellow-700/30">
+              <div class="glass-panel rounded-2xl p-3 md:p-5 relative border border-yellow-700/30 overflow-hidden">
+                <div class="text-[11px] text-yellow-300/80 text-center mb-2 flex items-center justify-center gap-1.5 md:hidden">
+                  <span>👈 اسحب الخريطة أفقياً لمعاينة واختيار المقاعد 👉</span>
+                </div>
                 <div id="cinemaScreenBanner" class="cinema-screen h-10 w-full max-w-3xl mx-auto mb-6 flex items-center justify-center"></div>
-                <div id="unifiedSeatsGrid" class="min-w-[1400px]"></div>
+                <div id="unifiedSeatsGrid"></div>
               </div>
 
               <!-- Submit Action Bar -->

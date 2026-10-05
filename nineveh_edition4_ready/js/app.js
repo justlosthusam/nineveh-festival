@@ -1084,7 +1084,7 @@ function showPendingSubmissionConfirmation(booking) {
 
         <i class="fa-solid fa-clock ml-1 text-yellow-400"></i>
 
-        طلبكم الآن بانتظار إقرار وموافقة منظم المهرجان.<br>
+        سيتم مراجعة طلبكم من قبل المنظمين.<br>
 
         <span class="font-bold text-white">ستصلكم التذكرة الرسمية مع باركود الدخول المعتمد مباشرة على الواتساب فور إقرار الحجز.</span>
 
