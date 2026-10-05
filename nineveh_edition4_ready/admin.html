@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة الأدمن المباشرة | مهرجان نينوى السينمائي</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#120304;color:#fff;font-family:Tahoma,'Segoe UI',sans-serif;padding:14px}
+  .wrap{max-width:1100px;margin:auto}
+  header{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid #c5a05944;padding-bottom:10px;margin-bottom:14px;flex-wrap:wrap}
+  h1{font-size:1.1rem;margin:0;color:#c5a059}
+  .live{font-size:.75rem;padding:4px 10px;border-radius:99px;border:1px solid #888;color:#aaa}
+  .live.on{border-color:#22c55e;color:#86efac}.live.on::before{content:"● ";animation:b 1.2s infinite}
+  @keyframes b{50%{opacity:.2}}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;text-align:center}
+  .stat{background:#1e080a;border:1px solid #c5a05933;border-radius:12px;padding:10px}
+  .stat b{display:block;font-size:1.5rem;color:#c5a059}.stat span{font-size:.7rem;color:#bbb}
+  .tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  button,a.btn{font-family:inherit;cursor:pointer;border:0;border-radius:8px;padding:8px 12px;font-size:.78rem;font-weight:700;text-decoration:none;display:inline-block}
+  .gold{background:#c5a059;color:#120304}.red{background:#7f1d1d;color:#fecaca}.green{background:#16a34a;color:#fff}.gray{background:#ffffff1a;color:#fff}
+  .card{background:#1e080a;border:1px solid #c5a05933;border-radius:14px;padding:12px;margin-bottom:10px}
+  .card.pending{border-color:#f59e0b;box-shadow:0 0 0 1px #f59e0b55}
+  .card.flash{animation:fl 2s}
+  @keyframes fl{0%{background:#5a3b00}100%{background:#1e080a}}
+  .row{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+  .id{font-family:monospace;color:#fde047;font-weight:700}
+  .seats{color:#c5a059;font-weight:700;margin:6px 0;word-break:break-word}
+  .meta{font-size:.78rem;color:#ccc}
+  .badge{font-size:.7rem;padding:3px 9px;border-radius:99px;font-weight:700}
+  .b-p{background:#f59e0b33;color:#fcd34d}.b-a{background:#22c55e33;color:#86efac}.b-r{background:#ef444433;color:#fca5a5}
+  .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .empty{text-align:center;color:#777;padding:30px}
+  #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#c5a059;color:#120304;padding:10px 18px;border-radius:12px;font-weight:800;display:none;z-index:9}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>لوحة الحجوزات المباشرة — مهرجان نينوى السينمائي</h1>
+    <span id="live" class="live">غير متصل</span>
+  </header>
+  <div class="stats">
+    <div class="stat"><b id="sT">0</b><span>إجمالي الطلبات</span></div>
+    <div class="stat"><b id="sP" style="color:#fbbf24">0</b><span>بانتظار الموافقة</span></div>
+    <div class="stat"><b id="sA" style="color:#4ade80">0</b><span>معتمدة</span></div>
+  </div>
+  <div class="tools">
+    <button class="gold" id="btnNotif">🔔 تفعيل إشعارات الجهاز</button>
+    <button class="gray" id="btnFilter">عرض: الكل</button>
+    <a class="btn gray" href="/">← الموقع</a>
+  </div>
+  <div id="list"><div class="empty">جاري التحميل...</div></div>
+</div>
+<div id="toast"></div>
+
+<script>
+const KEY = new URLSearchParams(location.search).get('key') || localStorage.getItem('niff_admin_key') || '';
+if (KEY) localStorage.setItem('niff_admin_key', KEY);
+let bookings = [], known = new Set(), first = true, filter = 'all', es = null, pollT = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function setLive(on){ const l=$('live'); l.className='live'+(on?' on':''); l.textContent=on?'متصل — يتحدث تلقائياً':'لا يوجد اتصال - إعادة محاولة...'; }
+function toast(t){ const e=$('toast'); e.textContent=t; e.style.display='block'; clearTimeout(e._t); e._t=setTimeout(()=>e.style.display='none',4000); }
+function beep(){ try{ const c=new (window.AudioContext||window.webkitAudioContext)(); [587,784].forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=f;g.gain.value=.15;o.connect(g);g.connect(c.destination);o.start(c.currentTime+i*.2);o.stop(c.currentTime+i*.2+.18);}); }catch(e){} }
+function notify(b){
+  beep(); toast('🔔 طلب حجز جديد: '+b.name);
+  if (navigator.vibrate) navigator.vibrate([200,100,200]);
+  if ('Notification' in window && Notification.permission==='granted')
+    try{ new Notification('طلب حجز جديد', {body: b.name+' — '+(b.seatCodes||[]).join(', ')}); }catch(e){}
+}
+
+let okAt=0, failMsg='';
+async function load(){
+  try{
+    const r = await fetch('/api/bookings?key='+encodeURIComponent(KEY)+'&t='+Date.now(), {cache:'no-store'});
+    if (r.status===401){ localStorage.removeItem('niff_admin_key'); location.href='/admin'; return; }
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    const list = d.bookings || [];
+    list.forEach(b=>{ if(!known.has(b.id)){ known.add(b.id); if(!first && b.status==='pending_approval') { b._new=true; notify(b);} } });
+    first = false; bookings = list; okAt=Date.now(); failMsg=''; setLive(true); render();
+  }catch(e){
+    failMsg=String(e.message||e); setLive(false);
+    if(first) $('list').innerHTML='<div class="empty">تعذّر الاتصال بالسيرفر ('+esc(failMsg)+')<br>تأكد أن السيرفر يعمل وأن الرابط صحيح، وسيعيد المحاولة تلقائياً</div>';
+  }
+}
+
+function waLink(b){
+  let p=(b.phone||'').replace(/\D/g,''); p = p.startsWith('0')?'964'+p.slice(1):(p.startsWith('964')?p:'964'+p);
+  const pdf=location.origin+'/pdfs/'+b.id+'.pdf';
+  const t=`أهلاً بك في مهرجان نينوى السينمائي الدولي (الدورة الثانية)\nتمت الموافقة على حجزكم\n\nرقم التذكرة: ${b.id}\nالاسم: ${b.name}\nالمقاعد: ${(b.seatCodes||[]).join(', ')}\n\nملف التذكرة PDF:\n${pdf}`;
+  return 'https://api.whatsapp.com/send?phone='+p+'&text='+encodeURIComponent(t);
+}
+
+function render(){
+  $('sT').textContent=bookings.length;
+  $('sP').textContent=bookings.filter(b=>b.status==='pending_approval').length;
+  $('sA').textContent=bookings.filter(b=>b.status==='approved').length;
+  let arr=[...bookings].reverse();
+  if(filter==='pending') arr=arr.filter(b=>b.status==='pending_approval');
+  if(!arr.length){ $('list').innerHTML='<div class="empty">لا توجد طلبات</div>'; return; }
+  $('list').innerHTML = arr.map(b=>{
+    const st=b.status==='approved'?['معتمد','b-a']:b.status==='rejected'?['مرفوض','b-r']:['⏳ بانتظار موافقتك','b-p'];
+    const acts = b.status==='pending_approval'
+      ? `<button class="green" onclick="act('${esc(b.id)}','approve')">✔ موافقة</button><button class="red" onclick="if(confirm('رفض الطلب وتحرير المقاعد؟'))act('${esc(b.id)}','reject')">✖ رفض</button>`
+      : (b.status==='approved' ? `<a class="btn green" target="_blank" href="${waLink(b)}">إرسال واتساب</a>` : '');
+    return `<div class="card ${b.status==='pending_approval'?'pending':''} ${b._new?'flash':''}">
+      <div class="row"><span class="id">${esc(b.id)}</span><span class="badge ${st[1]}">${st[0]}</span></div>
+      <div style="font-weight:800;margin-top:4px">${esc(b.name)}</div>
+      <div class="meta">📞 <a style="color:#ccc" href="tel:${esc(b.phone)}">${esc(b.phone)}</a> · ${esc(b.category||'')} ${b.organization?'· '+esc(b.organization):''}</div>
+      <div class="seats">${(b.seatCodes||[]).map(esc).join(' ، ')}</div>
+      <div class="meta">${b.createdAt? new Date(b.createdAt).toLocaleString('ar-IQ'):''}</div>
+      <div class="acts">${acts}<a class="btn gray" target="_blank" href="/pdfs/${esc(b.id)}.pdf">PDF</a></div>
+    </div>`;}).join('');
+}
+
+async function act(id, what){
+  try{
+    const r=await fetch('/api/admin/'+what,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,key:KEY})});
+    if(!r.ok) throw 0;
+    toast(what==='approve'?'تمت الموافقة':'تم الرفض'); load();
+  }catch(e){ toast('فشل التنفيذ، حاول مرة أخرى'); }
+}
+
+function connect(){
+  // البث المباشر اختياري (قد لا تدعمه بعض الشبكات/الأنفاق). إن لم يفتح خلال 4 ثوانٍ نلغيه ونعتمد الفحص الدوري.
+  if(!window.EventSource) return;
+  try{
+    es = new EventSource('/api/admin/stream?key='+encodeURIComponent(KEY));
+    let opened=false;
+    es.onopen = ()=>{ opened=true; };
+    es.onmessage = ()=> load();
+    es.onerror = ()=>{ if(!opened){ es.close(); es=null; } };
+    setTimeout(()=>{ if(!opened && es){ es.close(); es=null; } },4000);
+  }catch(e){}
+}
+
+$('btnNotif').onclick = async ()=>{
+  if(!('Notification' in window)) return toast('المتصفح لا يدعم الإشعارات');
+  const p = await Notification.requestPermission(); toast(p==='granted'?'تم تفعيل الإشعارات':'لم يتم السماح');
+  beep();
+};
+$('btnFilter').onclick = ()=>{ filter = filter==='all'?'pending':'all'; $('btnFilter').textContent = filter==='all'?'عرض: الكل':'عرض: المعلّقة فقط'; render(); };
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) load(); });
+
+load();
+pollT = setInterval(load, 3000);   // الأساس: فحص كل 3 ثوانٍ يعمل على أي شبكة
+connect();
+</script>
+</body>
+</html>

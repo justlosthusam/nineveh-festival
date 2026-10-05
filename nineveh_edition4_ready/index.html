@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مهرجان نينوى السينمائي الدولي - الدورة الثانية | حجز المقاعد</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Local QRCode.js & JsBarcode Libraries (Zero External Dependency) -->
+  <script src="js/qrcode.min.js"></script>
+  <script src="js/JsBarcode.all.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="antialiased text-white">
+
+  <!-- Gate Opening Entrance Animation Overlay -->
+  <div id="gateOverlay" class="hidden" style="display:none;">
+    <div class="gate-door gate-door-left"></div>
+    <div class="gate-door gate-door-right"></div>
+    <div class="gate-logo-container">
+      <img src="assets/emblem.png?v=5" alt="شعار المهرجان" class="w-40 md:w-52 h-auto mx-auto drop-shadow-2xl">
+      <h2 class="text-lg md:text-xl font-bold text-gold-matte mt-3 tracking-wide">مهرجان نينوى السينمائي الدولي</h2>
+      <p class="text-[11px] text-yellow-100/80 font-serif mt-0.5">الدورة الثانية - NINEVEH INTERNATIONAL FILM FESTIVAL</p>
+    </div>
+  </div>
+
+  <!-- Background overlay from template -->
+  <div class="fest-bg-overlay"></div>
+
+  <div class="main-wrapper min-h-screen flex flex-col">
+
+    <!-- Top Header Bar (Centered title & logo) -->
+    <header class="glass-panel sticky top-0 z-40 border-b border-yellow-700/20 px-4 py-3 text-center">
+      <div class="max-w-4xl mx-auto flex flex-col items-center justify-center gap-1 cursor-pointer" onclick="goToStep(1)">
+        <img src="assets/emblem.png?v=5" alt="شعار المهرجان" class="h-10 w-auto mb-1">
+        <h1 class="text-xl md:text-2xl font-bold text-gold-matte tracking-wide">
+          مهرجان نينوى السينمائي الدولي - الدورة الثانية
+        </h1>
+        <p class="text-xs text-yellow-100/70 font-serif">
+          منظومة التسجيل وحجز المقاعد الإلكترونية (800 مقعد)
+        </p>
+      </div>
+    </header>
+
+    <!-- Main Content Views -->
+    <main class="flex-grow max-w-3xl w-full mx-auto p-3 md:p-5">
+
+      <!-- ================= MAIN BOOKING SYSTEM ================= -->
+      <section id="view-booking" class="space-y-5">
+        
+        <!-- Two Main Options: Indoor Seats vs Outdoor Seats -->
+        <div class="glass-panel rounded-2xl p-5 border border-yellow-700/30 text-center space-y-3">
+          <h2 class="text-lg md:text-xl font-bold text-gold-matte">اختر نوع المقاعد المطلوب حجزها</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg mx-auto">
+            <button type="button" id="btn-cat-indoor" onclick="selectBookingCategory('theater')" class="p-4 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center gap-1 bg-gold-matte text-black border-yellow-400 shadow-lg scale-[1.02]">
+              <span class="text-base font-extrabold">المقاعد الداخلية</span>
+              <span class="text-[11px] opacity-80 font-normal">مسرح الجامعة الرئيسي (البلوكات B, C, D, E, F)</span>
+            </button>
+
+            <button type="button" id="btn-cat-outdoor" onclick="selectBookingCategory('outdoor')" class="p-4 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center gap-1 bg-black/60 text-yellow-200 border-yellow-700/40 hover:bg-white/10">
+              <span class="text-base font-extrabold">المقاعد الخارجية</span>
+              <span class="text-[11px] text-gray-400 font-normal">المقاعد الصيفية الخارجية (من 1 إلى 2000)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Form & Seats Interactive Box -->
+        <div class="glass-panel rounded-2xl p-5 md:p-6 border border-yellow-700/30 space-y-5">
+          
+          <form id="unifiedBookingForm" onsubmit="handleUnifiedFormSubmit(event)" class="space-y-4">
+            
+            <!-- Attendee Details Grid: Full Name, Phone with WhatsApp, Count -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- 1. Full Name -->
+              <div>
+                <label class="block font-bold text-yellow-200 text-xs mb-1.5">الاسم الثلاثي <span class="text-red-400">*</span></label>
+                <input type="text" id="unifiedAttendeeName" required placeholder="أدخل الاسم الثلاثي كاملاً" class="w-full bg-black/70 border border-yellow-700/40 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400">
+              </div>
+
+              <!-- 2. WhatsApp Phone Number -->
+              <div>
+                <label class="block font-bold text-yellow-200 text-xs mb-1.5">رقم هاتف مسجل به واتساب <span class="text-red-400">*</span></label>
+                <input type="tel" id="unifiedAttendeePhone" required placeholder="07XXXXXXXXX" class="w-full bg-black/70 border border-yellow-700/40 rounded-xl px-3.5 py-2.5 text-sm text-white text-right focus:outline-none focus:border-yellow-400" dir="ltr">
+              </div>
+
+              <!-- 3. Person / Ticket Count -->
+              <div>
+                <label class="block font-bold text-yellow-200 text-xs mb-1.5">عدد الأشخاص / التذاكر <span class="text-red-400">*</span></label>
+                <select id="unifiedAttendeeCount" onchange="onUnifiedPersonCountChange(this.value)" class="w-full bg-black/70 border border-yellow-700/40 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400">
+                  <option value="1">شخص واحد (1 مقعد)</option>
+                  <option value="2">شخصان (2 مقعد)</option>
+                  <option value="3">3 أشخاص (3 مقاعد)</option>
+                  <option value="4">4 أشخاص (4 مقاعد)</option>
+                  <option value="5">5 أشخاص (5 مقاعد)</option>
+                  <option value="6">6 أشخاص (6 مقاعد)</option>
+                  <option value="7">7 أشخاص (7 مقاعد)</option>
+                  <option value="8">8 أشخاص (8 مقاعد)</option>
+                  <option value="9">9 أشخاص (9 مقاعد)</option>
+                  <option value="10">10 أشخاص (10 مقاعد)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Additional Attendees Names if count > 1 -->
+            <div id="additionalNamesContainer" class="hidden space-y-2 pt-2 border-t border-yellow-700/20">
+              <label class="block font-bold text-yellow-200 text-xs">أسماء باقي الحاضرين (للحصول على تذاكر منفصلة لجميع الأشخاص):</label>
+              <div id="additionalNamesFields" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
+            </div>
+
+            <!-- 4. Seats Selection Map / Dropdown Section -->
+            <div class="pt-4 border-t border-yellow-700/20 space-y-4">
+              
+              <div class="flex items-center justify-between">
+                <h3 id="seatCategoryTitleText" class="font-bold text-gold-matte text-sm md:text-base">المقاعد والاختيار (المقاعد الداخلية - مسرح الجامعة)</h3>
+                <span class="text-xs text-yellow-300 font-bold">المقاعد المختارة: <span id="seatSelectionStatusText" class="text-white">0 / 1</span></span>
+              </div>
+
+              <!-- Seat Legend -->
+              <div class="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold bg-black/40 p-2.5 rounded-lg border border-yellow-700/20">
+                <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-3.5 h-3.5 rounded bg-white/15 border border-white/30 inline-block"></span>
+                    <span>متاح</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-3.5 h-3.5 rounded bg-amber-500 border border-yellow-200 inline-block"></span>
+                    <span>محدد</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-3.5 h-3.5 rounded bg-black border border-white/10 inline-block"></span>
+                    <span>محجوز</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Outdoor Seats Selection Dropdown (visible when Outdoor Mode active) -->
+              <div id="outdoorSearchBox" class="hidden glass-panel p-4 rounded-xl border border-yellow-700/30 text-center space-y-3">
+                <h4 class="text-xs md:text-sm text-yellow-200 font-bold">تحديد مقعد خارجي (من 1 إلى 2000)</h4>
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
+                  <select id="outdoorSeatDropdown" onchange="selectOutdoorSeatFromDropdown(this.value)" class="w-full sm:w-auto flex-1 bg-black/80 border border-yellow-700/50 rounded-lg px-3 py-2 text-xs text-yellow-200 focus:outline-none focus:border-yellow-400">
+                    <option value="">-- اختر رقم المقعد الخارجي (1 - 2000) --</option>
+                  </select>
+                  <div class="flex items-center gap-1.5 w-full sm:w-auto">
+                    <input type="number" id="outdoorSearchInput" min="1" max="2000" placeholder="ادخل رقم (1-2000)" class="w-full sm:w-36 bg-black/70 border border-yellow-700/40 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400">
+                    <button type="button" onclick="jumpToOutdoorSeatWizard()" class="px-3 py-2 bg-gold-matte text-black font-bold text-xs rounded-lg hover:scale-105 transition-transform whitespace-nowrap">تحديد</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Seats Map Container -->
+              <div class="glass-panel rounded-2xl p-4 overflow-x-auto relative border border-yellow-700/30">
+                <div id="cinemaScreenBanner" class="cinema-screen h-10 w-full max-w-3xl mx-auto mb-6 flex items-center justify-center"></div>
+                <div id="unifiedSeatsGrid" class="min-w-[1400px]"></div>
+              </div>
+
+              <!-- Submit Action Bar -->
+              <div class="flex flex-col md:flex-row items-center justify-between gap-3 pt-2">
+                <div>
+                  <p class="text-[11px] text-yellow-200/80">المقاعد المحددة حالياً:</p>
+                  <p id="wizardSeatsListText" class="font-bold text-gold-matte text-xs md:text-sm">لم يتم تحديد المقاعد بعد</p>
+                </div>
+
+                <button type="submit" id="btnSubmitBooking" class="w-full md:w-auto px-8 py-3 bg-gold-matte font-black text-black rounded-xl text-sm hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 shadow-lg">
+                  <span>تأكيد الحجز وتوليد التذاكر والباركود</span>
+                </button>
+              </div>
+
+            </div>
+
+          </form>
+        </div>
+      </section>
+
+      <!-- Footer -->
+    <footer class="glass-panel border-t border-yellow-700/20 py-3 px-4 text-center text-[11px] text-yellow-200/60 mt-auto">
+      <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2">
+        <p>جميع الحقوق محفوظة © 2026 - مهرجان نينوى السينمائي الدولي (الدورة الثانية)</p>
+        <p class="text-yellow-400/80">نظام حجز وتوثيق التذاكر الإلكتروني البصري</p>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ================= MULTI-ATTENDEE TICKET MODAL ================= -->
+  <div id="ticketModal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-lg z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="max-w-md w-full relative">
+      
+      <button onclick="closeTicketModal()" class="absolute -top-10 left-0 text-white bg-black/60 px-3 py-1 rounded-full text-xs">
+        إغلاق
+      </button>
+
+      <!-- Ticket Tabs Header if multiple attendees -->
+      <div id="ticketTabsHeader" class="flex gap-1.5 mb-2.5 overflow-x-auto pb-1">
+        <!-- Rendered if more than 1 attendee -->
+      </div>
+
+      <!-- Printable Ticket Card Container -->
+      <div id="printableTicket" class="ticket-card rounded-2xl p-5 text-white text-right space-y-3">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-yellow-600/30 pb-3">
+          <img src="assets/emblem.png?v=5" class="h-12 w-auto" alt="Logo">
+          <div class="text-left">
+            <span id="ticketBadgeText" class="inline-block bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-amber-500/40 mb-1">طلب حجز - بانتظار موافقة منظم المهرجان</span>
+            <h4 class="text-xs font-bold text-gold-matte">مهرجان نينوى السينمائي الدولي</h4>
+            <p class="text-[9px] text-gray-300">الدورة الثانية - 2nd Edition</p>
+          </div>
+        </div>
+
+        <!-- Attendee & Seat Info Grid -->
+        <div class="space-y-1.5 text-xs">
+          <div class="flex justify-between border-b border-white/10 pb-1">
+            <span class="text-gray-400">رقم التذكرة:</span>
+            <span id="ticketIdDisplay" class="font-mono font-bold text-yellow-300">--</span>
+          </div>
+          <div class="flex justify-between border-b border-white/10 pb-1">
+            <span class="text-gray-400">اسم المسجل:</span>
+            <span id="ticketNameDisplay" class="font-bold text-white">--</span>
+          </div>
+          <div class="flex justify-between border-b border-white/10 pb-1">
+            <span class="text-gray-400">الصفة / الجهة:</span>
+            <span id="ticketCategoryDisplay" class="font-bold text-yellow-200">--</span>
+          </div>
+          <div class="flex justify-between border-b border-white/10 pb-1">
+            <span class="text-gray-400">المقعد المخصص:</span>
+            <span id="ticketSeatsDisplay" class="font-bold text-gold-matte text-sm">--</span>
+          </div>
+        </div>
+
+        <!-- Unique QR Code & Barcode Display Container (Deep Maroon & Gold Festival Design) -->
+        <div class="bg-[#1c0508] border-2 border-yellow-600/40 rounded-2xl p-4 text-center space-y-3 shadow-2xl relative overflow-hidden">
+          
+          <div class="border-b border-yellow-600/30 pb-2">
+            <h5 class="text-xs md:text-sm font-extrabold text-gold-matte tracking-wide">
+              <i class="fa-solid fa-qrcode text-yellow-400 ml-1"></i>
+              باركود دخول - مهرجان نينوى السينمائي الدولي
+            </h5>
+            <p class="text-[10px] text-yellow-100/70 font-serif">الدورة الثانية - 2nd Edition</p>
+          </div>
+          
+          <!-- QR Code Container (White crisp card inset for scanner readability) -->
+          <div class="bg-white p-3 rounded-xl inline-block shadow-lg mx-auto">
+            <div id="qrcode" class="flex justify-center"></div>
+          </div>
+          
+          <!-- 1D Barcode Container (White crisp inset) -->
+          <div class="bg-white p-2.5 rounded-xl shadow-lg mx-auto max-w-xs">
+            <svg id="barcodeSvg" class="w-full h-14 mx-auto"></svg>
+          </div>
+
+          <div class="pt-1 border-t border-yellow-600/20 text-[10px] text-yellow-200/80 font-bold">
+            يرجى إبراز هذا الباركود عند بوابة المسرح الرئيسي للدخول
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="mt-3 space-y-2">
+        <a id="ticketPdfBtn" target="_blank" class="w-full py-3 px-3 bg-red-600/30 text-red-200 border border-red-500/50 font-bold text-xs rounded-xl text-center flex items-center justify-center gap-2 shadow-lg hover:bg-red-600 hover:text-white transition-all">
+          <i class="fa-solid fa-file-pdf text-base"></i>
+          <span>عرض وتنزيل تقرير الـ PDF المرفق للحجز</span>
+        </a>
+        <button onclick="window.print()" class="w-full py-2 px-3 bg-yellow-700/20 border border-yellow-700/40 text-yellow-200 hover:bg-yellow-600 hover:text-black rounded-xl font-bold text-xs flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-print"></i>
+          <span>طباعة / حفظ التذكرة والباركود</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Custom App JavaScript -->
+  <script src="js/app.js"></script>
+  <script>
+    // Instant Zero-Delay Fallback Ticket Link Handler for WhatsApp / Mobile Links
+    (function() {
+      try {
+        var urlParams = new URLSearchParams(window.location.search);
+        var ticketId = urlParams.get('ticket');
+        var paramName = urlParams.get('name');
+        var paramSeat = urlParams.get('seat');
+        var paramCat = urlParams.get('cat') || 'ضيوف المهرجان';
+
+        if (ticketId) {
+          var gate = document.getElementById('gateOverlay');
+          if (gate) {
+            gate.style.display = 'none';
+            gate.style.visibility = 'hidden';
+            try { gate.remove(); } catch(e){}
+          }
+          var bookingView = document.getElementById('view-booking');
+          if (bookingView) { bookingView.classList.add('hidden'); }
+
+          var modal = document.getElementById('ticketModal');
+          if (modal) { modal.classList.remove('hidden'); }
+
+          if (paramName && paramSeat) {
+            var nameEl = document.getElementById('ticketNameDisplay');
+            var idEl = document.getElementById('ticketIdDisplay');
+            var seatEl = document.getElementById('ticketSeatsDisplay');
+            var catEl = document.getElementById('ticketCategoryDisplay');
+            var badgeEl = document.getElementById('ticketBadgeText');
+
+            if (nameEl) nameEl.textContent = paramName;
+            if (idEl) idEl.textContent = ticketId;
+            if (seatEl) seatEl.textContent = paramSeat;
+            if (catEl) catEl.textContent = paramCat;
+            if (badgeEl) {
+              badgeEl.textContent = 'تذكرة رسمية معتمدة صالحة للدخول ';
+              badgeEl.className = 'inline-block bg-green-500/20 text-green-300 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-green-500/40 mb-1';
+            }
+          }
+        }
+      } catch(e){}
+    })();
+  </script>
+</body>
+</html>

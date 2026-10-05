@@ -1,0 +1,256 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800;900&display=swap');
+
+:root {
+  --bg-maroon: #1c0507;
+  --bg-dark-maroon: #120304;
+  --gold-primary: #c5a059;
+  --gold-muted: #aa8643;
+  --gold-light: #e6d3a7;
+  --text-ivory: #f5f2eb;
+  --glass-bg: rgba(24, 6, 8, 0.94);
+  --glass-border: rgba(197, 160, 89, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Tajawal', 'Cairo', 'Traditional Arabic', serif;
+}
+
+body {
+  background-color: var(--bg-dark-maroon);
+  background-image: radial-gradient(circle at 50% 15%, #360b0e 0%, #120304 75%);
+  color: var(--text-ivory);
+  direction: rtl;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Background image overlay container */
+.fest-bg-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('../assets/bg_template.jpg');
+  background-size: cover;
+  background-position: center top;
+  opacity: 0.16;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.main-wrapper {
+  position: relative;
+  z-index: 10;
+}
+
+/* Pure CSS Automated Gate Opening Entrance Overlay (Smooth opening without jump) */
+#gateOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  background: #000;
+  animation: overlayHide 1.4s forwards 0.3s;
+}
+
+.gate-door {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50.5vw;
+  background: radial-gradient(circle at center, #3d0c11 0%, #120304 100%);
+  z-index: 10000;
+  box-shadow: 0 0 50px rgba(0,0,0,0.9);
+}
+
+.gate-door-left {
+  left: 0;
+  border-right: 3px solid var(--gold-primary);
+  animation: gateLeftOpen 1.0s ease-in-out forwards 0.3s;
+}
+
+.gate-door-right {
+  right: 0;
+  border-left: 3px solid var(--gold-primary);
+  animation: gateRightOpen 1.0s ease-in-out forwards 0.3s;
+}
+
+.gate-door::after {
+  content: '';
+  position: absolute;
+  inset: 15px;
+  border: 1px solid rgba(197, 160, 89, 0.2);
+  pointer-events: none;
+}
+
+.gate-logo-container {
+  position: absolute;
+  z-index: 10001;
+  text-align: center;
+  width: 55vw;
+  max-width: 220px;
+  pointer-events: none;
+  animation: logoFadeOut 0.6s ease-in-out forwards 0.3s;
+}
+
+/* Keyframe Animations for Smooth Gate Opening (No scale jump) */
+@keyframes gateLeftOpen {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+@keyframes gateRightOpen {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes logoFadeOut {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+@keyframes overlayHide {
+  0% { opacity: 1; visibility: visible; }
+  85% { opacity: 1; visibility: visible; }
+  99% { opacity: 0; visibility: visible; }
+  100% { opacity: 0; visibility: hidden; pointer-events: none; display: none !important; }
+}
+
+/* Matte Cultural Gold Text Utility (Non-glowing) */
+.text-gold-matte {
+  color: var(--gold-primary);
+}
+
+.bg-gold-matte {
+  background-color: var(--gold-primary);
+  color: #120304;
+}
+
+.bg-gold-matte:hover {
+  background-color: var(--gold-light);
+}
+
+/* Compact Glassmorphism Panels */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+
+/* Cinema Screen */
+.cinema-screen {
+  background: linear-gradient(180deg, rgba(197, 160, 89, 0.15) 0%, rgba(197, 160, 89, 0.02) 100%);
+  border-top: 3px solid var(--gold-primary);
+  border-radius: 40% 40% 0 0 / 15px 15px 0 0;
+  position: relative;
+}
+
+.cinema-screen::before {
+  content: 'المسرح الرئيسي / الشاشة';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gold-muted);
+  letter-spacing: 2px;
+}
+
+/* Compact Unified Seats Styling */
+.seat {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid rgba(197, 160, 89, 0.25);
+}
+
+.seat.available {
+  background: rgba(30, 8, 10, 0.8);
+  color: var(--gold-light);
+}
+
+.seat.available:hover {
+  transform: scale(1.2);
+  z-index: 20;
+  background: var(--gold-primary);
+  color: #120304;
+  border-color: #fff;
+}
+
+.seat.selected {
+  background: var(--gold-primary) !important;
+  color: #120304 !important;
+  border-color: #ffffff !important;
+  font-weight: 800;
+  transform: scale(1.1);
+}
+
+.seat.reserved {
+  background: rgba(10, 2, 3, 0.85) !important;
+  color: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+/* Compact Forms & Inputs */
+input[type="text"], input[type="tel"] {
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #120304;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gold-muted);
+  border-radius: 3px;
+}
+
+
+/* ===== خريطة القاعة ===== */
+.hall-map { direction:ltr; display:flex; flex-direction:column; gap:28px; align-items:center; padding:20px 16px 30px; min-width:max-content; }
+.hall-top, .hall-bottom { display:flex; justify-content:center; align-items:flex-start; gap:18px; width:100%; }
+
+.hall-block { transform:none; flex:0 0 auto; display:flex; flex-direction:column; gap:3px; align-items:center;
+  padding:10px 8px; border:1px solid rgba(197,160,89,.18); border-radius:12px; background:rgba(0,0,0,.25); }
+.hall-block-title { display:flex; gap:10px; align-items:baseline; margin-bottom:6px; }
+.hall-block-letter { font-size:1.6rem; font-weight:900; color:var(--gold-primary); line-height:1; }
+.hall-block-count { font-size:.65rem; color:var(--gold-light); opacity:.75; }
+.hall-row { display:flex; align-items:center; gap:6px; }
+.hall-row-label { width:18px; text-align:center; font-size:.65rem; font-weight:800; color:rgba(250,204,21,.75); }
+.hall-row-seats { display:flex; gap:3px; direction:ltr; }
+.hall-sector-a { align-self:center; min-width:260px; padding:40px 16px; text-align:center; font-weight:700; font-size:.75rem;
+  color:rgba(255,255,255,.35); border:2px dashed rgba(255,255,255,.15); border-radius:14px; }
+.seat.pending { background:rgba(245,158,11,.25) !important; color:#fcd34d !important; border-color:rgba(245,158,11,.5) !important; cursor:not-allowed; }
+
+#unifiedSeatsGrid { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+@media (max-width: 900px) {
+  .hall-top, .hall-bottom { flex-direction:column; align-items:center; gap:18px; }
+  .hall-map { min-width:0; }
+  .hall-sector-a { min-width:0; width:100%; padding:18px 10px; }
+  .seat { width:26px; height:26px; }
+}
