@@ -701,13 +701,15 @@ function renderUnified800SeatsGrid() {
     outWrapper.className = 'w-full space-y-3';
 
     // Pagination Bar
+    const boxNames = { 1: 'الخانة الأولى (1 - 1000)', 2: 'الخانة الثانية (1001 - 2000)', 3: 'الخانة الثالثة (2001 - 3000)', 4: 'الخانة الرابعة (3001 - 4000)' };
+    const currentBoxLabel = boxNames[window.currentOutdoorSector] || `الخانة ${window.currentOutdoorSector}`;
     const pagWrapper = document.createElement('div');
     pagWrapper.className = 'flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-yellow-200 font-bold bg-black/60 p-2.5 rounded-xl border border-yellow-700/30';
     pagWrapper.innerHTML = `
       <div class="flex items-center gap-2">
-        <span class="text-gold-matte font-black">القطاع ${window.currentOutdoorSector}</span>
+        <span class="text-gold-matte font-black">${currentBoxLabel}</span>
         <span class="text-gray-400">|</span>
-        <span>المقاعد من <b class="text-yellow-300 font-mono">${sectorStart + pageStart + 1}</b> إلى <b class="text-yellow-300 font-mono">${sectorStart + pageEnd}</b></span>
+        <span>المقاعد المعروضة: من <b class="text-yellow-300 font-mono">${sectorStart + pageStart + 1}</b> إلى <b class="text-yellow-300 font-mono">${sectorStart + pageEnd}</b></span>
       </div>
       <div class="flex items-center gap-2">
         <span class="text-[11px] text-gray-400">صفحة ${window.outdoorSectorPage} من ${maxSectorPages}</span>
@@ -1835,7 +1837,8 @@ function selectBookingCategory(cat) {
 }
 
 function onUnifiedPersonCountChange(countVal) {
-  activePersonCount = parseInt(countVal) || 1;
+  let parsed = parseInt(countVal) || 1;
+  activePersonCount = Math.max(1, Math.min(parsed, 2)); // Maximum 2 persons
   
   const statusText = document.getElementById('seatSelectionStatusText');
   if (statusText) statusText.textContent = `${selectedSeats.length} / ${activePersonCount}`;
@@ -1847,23 +1850,19 @@ function onUnifiedPersonCountChange(countVal) {
     renderUnified800SeatsGrid();
   }
 
-  // Generate additional attendee name fields if count > 1
+  // Generate additional attendee name fields if count > 1 (person 2 only)
   const addContainer = document.getElementById('additionalNamesContainer');
   const addFields = document.getElementById('additionalNamesFields');
   
   if (addContainer && addFields) {
     if (activePersonCount > 1) {
       addContainer.classList.remove('hidden');
-      let fieldsHtml = '';
-      for (let i = 2; i <= activePersonCount; i++) {
-        fieldsHtml += `
-          <div>
-            <label class="block font-bold text-yellow-200/80 text-[11px] mb-1">اسم الحاضر رقم ${i} <span class="text-red-400">*</span></label>
-            <input type="text" required data-additional-name="true" placeholder="أدخل اسم الحاضر رقم ${i}" class="w-full bg-black/70 border border-yellow-700/40 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400">
-          </div>
-        `;
-      }
-      addFields.innerHTML = fieldsHtml;
+      addFields.innerHTML = `
+        <div>
+          <label class="block font-bold text-yellow-200/80 text-[11px] mb-1">اسم الشخص الثاني <span class="text-red-400">*</span></label>
+          <input type="text" required data-additional-name="true" placeholder="أدخل اسم الشخص الثاني بالكامل" class="w-full bg-black/70 border border-yellow-700/40 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400">
+        </div>
+      `;
     } else {
       addContainer.classList.add('hidden');
       addFields.innerHTML = '';

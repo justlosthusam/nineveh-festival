@@ -98,23 +98,15 @@
               <div>
                 <label class="block font-bold text-yellow-200 text-xs mb-1.5">عدد الأشخاص / التذاكر <span class="text-red-400">*</span></label>
                 <select id="unifiedAttendeeCount" onchange="onUnifiedPersonCountChange(this.value)" class="w-full bg-black/70 border border-yellow-700/40 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400">
-                  <option value="1">شخص واحد (1 مقعد)</option>
-                  <option value="2">شخصان (2 مقعد)</option>
-                  <option value="3">3 أشخاص (3 مقاعد)</option>
-                  <option value="4">4 أشخاص (4 مقاعد)</option>
-                  <option value="5">5 أشخاص (5 مقاعد)</option>
-                  <option value="6">6 أشخاص (6 مقاعد)</option>
-                  <option value="7">7 أشخاص (7 مقاعد)</option>
-                  <option value="8">8 أشخاص (8 مقاعد)</option>
-                  <option value="9">9 أشخاص (9 مقاعد)</option>
-                  <option value="10">10 أشخاص (10 مقاعد)</option>
+                  <option value="1">شخص واحد (تذكرة واحدة / مقعد 1)</option>
+                  <option value="2">شخصان (تذكرتان / مقعدان - الحد الأقصى)</option>
                 </select>
               </div>
             </div>
 
             <!-- Additional Attendees Names if count > 1 -->
             <div id="additionalNamesContainer" class="hidden space-y-2 pt-2 border-t border-yellow-700/20">
-              <label class="block font-bold text-yellow-200 text-xs">أسماء باقي الحاضرين (للحصول على تذاكر منفصلة لجميع الأشخاص):</label>
+              <label class="block font-bold text-yellow-200 text-xs">اسم الشخص الثاني (للحصول على تذكرة منفصلة):</label>
               <div id="additionalNamesFields" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
             </div>
 
@@ -148,9 +140,9 @@
               <div id="outdoorSearchBox" class="hidden glass-panel p-4 rounded-2xl border border-yellow-700/30 text-center space-y-3.5">
                 <div class="flex items-center justify-between border-b border-yellow-700/20 pb-2">
                   <h4 class="text-xs md:text-sm text-yellow-200 font-extrabold flex items-center gap-1.5">
-                    <span>🎪 خريطة المقاعد الصيفية الخارجية (4,000 مقعد متباعدة)</span>
+                    <span>🎪 خريطة المقاعد الصيفية الخارجية (4,000 مقعد متباعدة ومنظمة)</span>
                   </h4>
-                  <span class="text-[10px] text-gold-matte bg-black/60 px-2.5 py-1 rounded-full border border-yellow-700/30">مقسمة لـ 4 قطاعات</span>
+                  <span class="text-[10px] text-gold-matte bg-black/60 px-2.5 py-1 rounded-full border border-yellow-700/30">مقسمة لـ 4 خانات (1,000 مقعد لكل خانة)</span>
                 </div>
 
                 <!-- Quick Search Input (1 - 4000) -->
@@ -159,12 +151,12 @@
                   <button type="button" onclick="jumpToOutdoorSeatWizard()" class="px-5 py-2 bg-gold-matte text-black font-extrabold text-xs rounded-xl hover:scale-105 transition-transform whitespace-nowrap shadow-md">تحديد المقعد</button>
                 </div>
 
-                <!-- Sector Tabs (4 Sectors: 1000 each) -->
-                <div class="flex flex-wrap justify-center gap-2 pt-1" id="outdoorSectorTabs">
-                  <button type="button" onclick="setOutdoorSector(1)" id="sector-btn-1" class="outdoor-sector-btn active">القطاع 1 (1 - 1000)</button>
-                  <button type="button" onclick="setOutdoorSector(2)" id="sector-btn-2" class="outdoor-sector-btn">القطاع 2 (1001 - 2000)</button>
-                  <button type="button" onclick="setOutdoorSector(3)" id="sector-btn-3" class="outdoor-sector-btn">القطاع 3 (2001 - 3000)</button>
-                  <button type="button" onclick="setOutdoorSector(4)" id="sector-btn-4" class="outdoor-sector-btn">القطاع 4 (3001 - 4000)</button>
+                <!-- Sector Tabs (4 Boxes: 1000 each) -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1" id="outdoorSectorTabs">
+                  <button type="button" onclick="setOutdoorSector(1)" id="sector-btn-1" class="outdoor-sector-btn active">الخانة الأولى (1 - 1000)</button>
+                  <button type="button" onclick="setOutdoorSector(2)" id="sector-btn-2" class="outdoor-sector-btn">الخانة الثانية (1001 - 2000)</button>
+                  <button type="button" onclick="setOutdoorSector(3)" id="sector-btn-3" class="outdoor-sector-btn">الخانة الثالثة (2001 - 3000)</button>
+                  <button type="button" onclick="setOutdoorSector(4)" id="sector-btn-4" class="outdoor-sector-btn">الخانة الرابعة (3001 - 4000)</button>
                 </div>
               </div>
 
