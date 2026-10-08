@@ -36,11 +36,7 @@ def key_ok(k):
     return bool(k) and hmac.compare_digest(str(k), ADMIN_KEY)
 STATIC_ALLOWED = ("/index.html", "/css/", "/js/", "/assets/", "/pdfs/", "/favicon.ico")
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-# مجلد البيانات: اضبط DATA_DIR=/var/data (قرص Render الدائم) كي لا تُمسح الحجوزات عند إعادة النشر
-DATA_DIR = os.environ.get("DATA_DIR", PROJECT_DIR)
-os.makedirs(DATA_DIR, exist_ok=True)
-DB_FILE = os.path.join(DATA_DIR, "db.json")
-SEED_FILE = os.path.join(PROJECT_DIR, "db_seed.json")  # نسخة احتياطية داخل المستودع
+DB_FILE = os.path.join(PROJECT_DIR, "db.json")
 ORGANIZER_EMAIL = "husamalsiayd@gmail.com"
 
 # ===== تكوين البلوكات حسب الخريطة الرسمية =====
@@ -83,10 +79,6 @@ def apply_reject(db, ticket_id):
     return bk
 
 def init_db():
-    if not os.path.exists(DB_FILE) and os.path.exists(SEED_FILE):
-        import shutil
-        shutil.copyfile(SEED_FILE, DB_FILE)
-        print("[DB] restored from db_seed.json")
     if not os.path.exists(DB_FILE):
         seats = []
         seat_id_counter = 1
@@ -134,56 +126,9 @@ def load_db():
     with open(DB_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
-_db_lock = threading.Lock()
 def save_db(data):
-    with _db_lock:
-        tmp = DB_FILE + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        os.replace(tmp, DB_FILE)   # كتابة ذرية: لا يتلف الملف إن انقطع التشغيل
-    schedule_backup()
-
-# ===== نسخ احتياطي تلقائي لـ db.json إلى تلكرام (بعد 30 ثانية من آخر تغيير) =====
-_backup_timer = None
-def _tg_creds():
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
-    cfg = os.path.join(PROJECT_DIR, "telegram_config.json")
-    if (not token or not chat_id) and os.path.exists(cfg):
-        try:
-            c = json.load(open(cfg, encoding="utf-8"))
-            token = token or c.get("bot_token", "").strip()
-            chat_id = chat_id or str(c.get("chat_id", "")).strip()
-        except Exception:
-            pass
-    return token, chat_id
-
-def _do_backup():
-    try:
-        token, chat_id = _tg_creds()
-        if not token or not chat_id or not os.path.exists(DB_FILE):
-            return
-        boundary = "----bk" + secrets.token_hex(12)
-        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        body = bytearray()
-        body.extend(f"--{boundary}\r\nContent-Disposition: form-data; name=\"chat_id\"\r\n\r\n{chat_id}\r\n".encode())
-        body.extend(f"--{boundary}\r\nContent-Disposition: form-data; name=\"caption\"\r\n\r\n#db_backup {stamp}\r\n".encode())
-        body.extend(f"--{boundary}\r\nContent-Disposition: form-data; name=\"document\"; filename=\"db_{stamp}.json\"\r\nContent-Type: application/json\r\n\r\n".encode())
-        body.extend(open(DB_FILE, "rb").read())
-        body.extend(f"\r\n--{boundary}--\r\n".encode())
-        req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendDocument", data=bytes(body),
-                                     headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
-        urllib.request.urlopen(req, timeout=30)
-        print("[BACKUP] db.json sent to Telegram")
-    except Exception as e:
-        print(f"[BACKUP ERROR] {e}")
-
-def schedule_backup():
-    global _backup_timer
-    if _backup_timer: _backup_timer.cancel()
-    _backup_timer = threading.Timer(30, _do_backup)
-    _backup_timer.daemon = True
-    _backup_timer.start()
+    with open(DB_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 # Send Email Notification with PDF Attachment
 def send_email_with_pdf(booking, pdf_path):
@@ -205,19 +150,17 @@ def send_email_with_pdf(booking, pdf_path):
           
           <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(197,160,89,0.3);">
             <p><strong>رقم الحجز:</strong> <span style="color: #ffd700;">{ticket_id}</span></p>
-            <p><strong>اسم طالب الحجز:</strong> {name}</p>
+            <p><strong>اسم المسجل:</strong> {name}</p>
             <p><strong>رقم الهاتف:</strong> {phone}</p>
             <p><strong>الصفة / الجهة:</strong> {booking.get('category', 'مواطن')} ({booking.get('organization', '-') or '-'})</p>
-            <p><strong>المقاعد المطلوبة:</strong> <strong style="color: #c5a059;">{seat_codes}</strong></p>
+            <p><strong>المقاعد المثبتة:</strong> <strong style="color: #c5a059;">{seat_codes}</strong></p>
+            <p><strong>الحالة:</strong> <span style="color: #4ade80; font-weight: bold;">معتمد ومثبت فوراً</span></p>
           </div>
 
-          <p style="margin-top: 20px; font-size: 13px;">تم إرفاق ملف الـ PDF كاملاً ببيانات الحجز مع هذه الرسالة.</p>
+          <p style="margin-top: 20px; font-size: 13px;">تم إرفاق ملف الـ PDF الرسمي مع هذه الرسالة، وتوليد باركود الدخول للمسجل تلقائياً.</p>
           
-          <div style="margin-top: 25px; text-align: center;">
-            <a href="{approve_url}" style="background-color: #c5a059; color: #120304; padding: 12px 28px; font-weight: bold; text-decoration: none; border-radius: 10px; font-size: 14px; display: inline-block;">موافقة وإقرار تثبيت الحجز والمقاعد (Approve)</a>
-          </div>
-          <div style="margin-top: 15px; text-align: center;">
-            <a href="{pdf_url}" target="_blank" style="color: #e6d3a7; font-size: 12px; text-decoration: underline;">تحميل وتنزيل ملف PDF الحجز</a>
+          <div style="margin-top: 20px; text-align: center;">
+            <a href="{pdf_url}" target="_blank" style="background-color: #c5a059; color: #120304; padding: 12px 28px; font-weight: bold; text-decoration: none; border-radius: 10px; font-size: 14px; display: inline-block;">تحميل وتنزيل ملف PDF التذاكر</a>
           </div>
         </div>
         """
@@ -273,27 +216,34 @@ def send_telegram_notification(booking, pdf_path=None):
         approve_url = f"{base}/api/admin/approve-email?id={ticket_id}&key={urllib.parse.quote(ADMIN_KEY)}"
         admin_url = f"{base}/admin?key={urllib.parse.quote(ADMIN_KEY)}"
         pdf_url = f"{base}/pdfs/{ticket_id}.pdf"
+        created_at = booking.get("createdAt", "")
+        # Format Baghdad Time (UTC+3)
+        time_str = ""
+        try:
+            if created_at:
+                dt = datetime.fromisoformat(created_at)
+                time_str = dt.strftime("%Y-%m-%d | %I:%M %p")
+        except Exception:
+            time_str = datetime.now().strftime("%Y-%m-%d | %I:%M %p")
 
         text = (
-            f"🎬 <b>طلب حجز جديد — مهرجان نينوى السينمائي الدولي</b>\n"
+            f"🎬 <b>حجز جديد معتمد ومؤكد فوراً — مهرجان نينوى السينمائي</b>\n"
             f"━━━━━━━━━━━━━━━━━━━\n"
             f"🎫 <b>رقم الحجز:</b> <code>{ticket_id}</code>\n"
             f"👤 <b>اسم المسجل:</b> {name}\n"
             f"📞 <b>رقم الهاتف:</b> <code>{phone}</code>\n"
             f"🏷️ <b>الصفة:</b> {category}\n"
-            f"💺 <b>المقاعد المطلوبة:</b> <b>{seats}</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━\n"
-            f"⚡ <i>اضغط على الزر أدناه للموافقة وتثبيت المقاعد فوراً:</i>"
+            f"💺 <b>المقاعد المثبتة:</b> <b>{seats}</b>\n"
+            f"🕒 <b>توقيت الحجز (بغداد):</b> <code>{time_str}</code>\n"
+            f"✅ <b>الحالة:</b> <b>تمت الموافقة وتثبيت المقاعد وتوليد الباركود فوراً</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━"
         )
 
         inline_keyboard = {
             "inline_keyboard": [
                 [
-                    {"text": "✅ موافقة وإقرار الحجز", "url": approve_url}
-                ],
-                [
-                    {"text": "📄 تحميل ملف الـ PDF", "url": pdf_url},
-                    {"text": "📊 لوحة الأدمن", "url": admin_url}
+                    {"text": "📄 عرض ملف الـ PDF للتذاكر", "url": pdf_url},
+                    {"text": "📊 لوحة الأدمن المباشرة", "url": admin_url}
                 ]
             ]
         }
@@ -701,6 +651,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             ticket_id = f"NIFF2-{int(datetime.now().timestamp() * 1000):X}"
+            now_iso = datetime.now().isoformat()
             booking = {
                 "id": ticket_id,
                 "name": name,
@@ -710,20 +661,20 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 "personsCount": persons_count,
                 "seatCodes": seat_codes,
                 "attendees": attendees,
-                "status": "pending_approval",
-                "createdAt": datetime.now().isoformat(),
+                "status": "approved",
+                "createdAt": now_iso,
                 "qrCodeData": f"NIFF2|{ticket_id}|{name}|{category}|{','.join(seat_codes)}"
             }
 
             for s in db["seats"]:
                 if s["code"] in seat_codes:
-                    s["status"] = "pending"
+                    s["status"] = "reserved"
                     s["bookingId"] = ticket_id
 
             db["bookings"].append(booking)
             save_db(db)
 
-            broadcast("new_booking", {"id": ticket_id, "name": name, "phone": phone, "seats": seat_codes})
+            broadcast("new_booking", {"id": ticket_id, "name": name, "phone": phone, "seats": seat_codes, "status": "approved"})
 
             # Generate PDF Registration Document
             pdf_path, pdf_filename = pdf_generator.create_booking_pdf(booking)
@@ -734,12 +685,12 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             # Dispatch Telegram Notification & PDF
             send_telegram_notification(booking, pdf_path)
 
-
             self._send_json({
                 "success": True,
+                "booking": booking,
                 "ticket": booking,
                 "pdfUrl": f"/pdfs/{pdf_filename}",
-                "message": "سيتم مراجعة طلبكم من قبل المنظمين"
+                "message": "تم تأكيد الحجز والموافقة عليه وتثبيت المقاعد فوراً بنجاح"
             })
             return
 
