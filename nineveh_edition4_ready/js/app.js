@@ -1236,9 +1236,30 @@ let currentTicketIsApproved = false;
 
 // Render Multi-Attendee Ticket Modal with PDF Link
 
-function showMultiTicketModal(attendees, baseTicketId, pdfUrl, isApproved = false) {
+function getBaghdadFormattedDate(dateInput) {
+  const d = dateInput ? new Date(dateInput) : new Date();
+  try {
+    const options = {
+      timeZone: 'Asia/Baghdad',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    };
+    return new Intl.DateTimeFormat('ar-IQ', options).format(d);
+  } catch(e) {
+    return d.toLocaleString('ar-IQ');
+  }
+}
 
-  currentTicketIsApproved = isApproved;
+function showMultiTicketModal(attendees, baseTicketId, pdfUrl, isApproved = true, bookingDate = null) {
+
+  currentTicketIsApproved = true; // Always approved instantly upon booking
+
+  const formattedDate = getBaghdadFormattedDate(bookingDate);
 
   generatedTicketsData = attendees.map((att, idx) => ({
 
@@ -1252,7 +1273,9 @@ function showMultiTicketModal(attendees, baseTicketId, pdfUrl, isApproved = fals
 
     seatCode: att.seatCode,
 
-    phone: att.phone
+    phone: att.phone,
+
+    bookingDate: formattedDate
 
   }));
 
@@ -1335,6 +1358,14 @@ function showMultiTicketModal(attendees, baseTicketId, pdfUrl, isApproved = fals
             <span class="text-gray-400">المقعد المخصص:</span>
 
             <span id="ticketSeatsDisplay" class="font-bold text-gold-matte text-sm">--</span>
+
+          </div>
+
+          <div class="flex justify-between border-b border-white/10 pb-1">
+
+            <span class="text-gray-400">تاريخ وتوقيت الحجز (بغداد):</span>
+
+            <span id="ticketDateDisplay" class="font-bold text-yellow-300 text-xs font-mono">--</span>
 
           </div>
 
@@ -1570,23 +1601,19 @@ function renderTicketCardIndex(index) {
 
 
 
+  const dateDisp = document.getElementById('ticketDateDisplay');
+
+  if (dateDisp) dateDisp.textContent = t.bookingDate || getBaghdadFormattedDate();
+
+
+
   const statusBadge = document.getElementById('ticketBadgeText');
 
   if (statusBadge) {
 
-    if (currentTicketIsApproved) {
+    statusBadge.textContent = '✓ تمت الموافقة وتثبيت الحجز رسمياً';
 
-      statusBadge.textContent = 'تذكرة رسمية معتمدة صالحة للدخول ';
-
-      statusBadge.className = 'inline-block bg-green-500/20 text-green-300 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-green-500/40 mb-1';
-
-    } else {
-
-      statusBadge.textContent = 'طلب حجز - بانتظار موافقة منظم المهرجان';
-
-      statusBadge.className = 'inline-block bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-amber-500/40 mb-1';
-
-    }
+    statusBadge.className = 'inline-block bg-green-500/20 text-green-300 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-green-500/40 mb-1';
 
   }
 
@@ -1686,11 +1713,7 @@ function renderTicketCardIndex(index) {
 
   const noticeEl = document.getElementById('ticketBarcodeNotice') || document.querySelector('#printableTicket .border-t') || document.querySelector('#ticketPrintArea .border-t');
   if (noticeEl) {
-    if (currentTicketIsApproved) {
-      noticeEl.innerHTML = '<span class="text-green-300 font-bold">✓ تذكرة معتمدة رسمياً — يرجى إبراز هذا الباركود عند بوابة الدخول</span>';
-    } else {
-      noticeEl.innerHTML = '<span class="text-amber-300 font-bold">⏳ بانتظار مراجعة المنظمين — سيتم تفعيل الباركود وتأكيده رسمياً فور الموافقة</span>';
-    }
+    noticeEl.innerHTML = '<span class="text-green-300 font-bold">✓ تمت الموافقة على الحجز رسمياً — يرجى إبراز هذا الباركود عند بوابة المسرح للدخول</span>';
   }
 
 }
@@ -1929,15 +1952,15 @@ async function handleUnifiedFormSubmit(e) {
       onUnifiedPersonCountChange(1);
       fetchSeats();
 
-      const isApproved = (b.status === 'approved' || isOutdoor);
       const atts = (b.attendees && b.attendees.length > 0) ? b.attendees : [{ name: b.name, category: b.category, seatCode: (b.seatCodes || [])[0] }];
-      showMultiTicketModal(atts, b.id, `/pdfs/${b.id}.pdf`, isApproved);
+      showMultiTicketModal(atts, b.id, `/pdfs/${b.id}.pdf`, true, b.createdAt);
     } else {
       alert(data.message || data.error || 'حدث خطأ أثناء حفظ الحجز');
     }
   } catch(err) {
     // Offline fallback submission
     const offlineId = 'NIFF2-' + Math.floor(100000 + Math.random() * 900000);
+    const nowIso = new Date().toISOString();
     const offlineBooking = {
       id: offlineId,
       name: mainName,
@@ -1945,7 +1968,8 @@ async function handleUnifiedFormSubmit(e) {
       category: catName,
       seatCodes: selectedSeats,
       attendees: attendeesList,
-      status: initialStatus
+      status: 'approved',
+      createdAt: nowIso
     };
     const localBookings = JSON.parse(localStorage.getItem('niff2_bookings') || '[]');
     localBookings.unshift(offlineBooking);
@@ -1957,7 +1981,7 @@ async function handleUnifiedFormSubmit(e) {
     onUnifiedPersonCountChange(1);
     fetchSeats();
 
-    showMultiTicketModal(attendeesList, offlineId, `#`, isOutdoor);
+    showMultiTicketModal(attendeesList, offlineId, `#`, true, nowIso);
   }
 }
 

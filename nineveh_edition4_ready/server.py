@@ -218,27 +218,34 @@ def send_telegram_notification(booking, pdf_path=None):
         approve_url = f"{base}/api/admin/approve-email?id={ticket_id}&key={urllib.parse.quote(ADMIN_KEY)}"
         admin_url = f"{base}/admin?key={urllib.parse.quote(ADMIN_KEY)}"
         pdf_url = f"{base}/pdfs/{ticket_id}.pdf"
+        created_at = booking.get("createdAt", "")
+        # Format Baghdad Time (UTC+3)
+        time_str = ""
+        try:
+            if created_at:
+                dt = datetime.fromisoformat(created_at)
+                time_str = dt.strftime("%Y-%m-%d | %I:%M %p")
+        except Exception:
+            time_str = datetime.now().strftime("%Y-%m-%d | %I:%M %p")
 
         text = (
-            f"🎬 <b>طلب حجز جديد — مهرجان نينوى السينمائي الدولي</b>\n"
+            f"🎬 <b>حجز جديد معتمد ومؤكد فوراً — مهرجان نينوى السينمائي</b>\n"
             f"━━━━━━━━━━━━━━━━━━━\n"
             f"🎫 <b>رقم الحجز:</b> <code>{ticket_id}</code>\n"
             f"👤 <b>اسم المسجل:</b> {name}\n"
             f"📞 <b>رقم الهاتف:</b> <code>{phone}</code>\n"
             f"🏷️ <b>الصفة:</b> {category}\n"
-            f"💺 <b>المقاعد المطلوبة:</b> <b>{seats}</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━\n"
-            f"⚡ <i>اضغط على الزر أدناه للموافقة وتثبيت المقاعد فوراً:</i>"
+            f"💺 <b>المقاعد المثبتة:</b> <b>{seats}</b>\n"
+            f"🕒 <b>توقيت الحجز (بغداد):</b> <code>{time_str}</code>\n"
+            f"✅ <b>الحالة:</b> <b>تمت الموافقة وتثبيت المقاعد وتوليد الباركود فوراً</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━"
         )
 
         inline_keyboard = {
             "inline_keyboard": [
                 [
-                    {"text": "✅ موافقة وإقرار الحجز", "url": approve_url}
-                ],
-                [
-                    {"text": "📄 تحميل ملف الـ PDF", "url": pdf_url},
-                    {"text": "📊 لوحة الأدمن", "url": admin_url}
+                    {"text": "📄 عرض ملف الـ PDF للتذاكر", "url": pdf_url},
+                    {"text": "📊 لوحة الأدمن المباشرة", "url": admin_url}
                 ]
             ]
         }
@@ -646,6 +653,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             ticket_id = f"NIFF2-{int(datetime.now().timestamp() * 1000):X}"
+            now_iso = datetime.now().isoformat()
             booking = {
                 "id": ticket_id,
                 "name": name,
@@ -655,20 +663,20 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 "personsCount": persons_count,
                 "seatCodes": seat_codes,
                 "attendees": attendees,
-                "status": "pending_approval",
-                "createdAt": datetime.now().isoformat(),
+                "status": "approved",
+                "createdAt": now_iso,
                 "qrCodeData": f"NIFF2|{ticket_id}|{name}|{category}|{','.join(seat_codes)}"
             }
 
             for s in db["seats"]:
                 if s["code"] in seat_codes:
-                    s["status"] = "pending"
+                    s["status"] = "reserved"
                     s["bookingId"] = ticket_id
 
             db["bookings"].append(booking)
             save_db(db)
 
-            broadcast("new_booking", {"id": ticket_id, "name": name, "phone": phone, "seats": seat_codes})
+            broadcast("new_booking", {"id": ticket_id, "name": name, "phone": phone, "seats": seat_codes, "status": "approved"})
 
             # Generate PDF Registration Document
             pdf_path, pdf_filename = pdf_generator.create_booking_pdf(booking)
@@ -679,12 +687,12 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             # Dispatch Telegram Notification & PDF
             send_telegram_notification(booking, pdf_path)
 
-
             self._send_json({
                 "success": True,
+                "booking": booking,
                 "ticket": booking,
                 "pdfUrl": f"/pdfs/{pdf_filename}",
-                "message": "سيتم مراجعة طلبكم من قبل المنظمين"
+                "message": "تم تأكيد الحجز والموافقة عليه وتثبيت المقاعد فوراً بنجاح"
             })
             return
 

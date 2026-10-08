@@ -217,7 +217,7 @@
         <div class="flex items-center justify-between border-b border-yellow-600/30 pb-3">
           <img src="assets/emblem.png?v=5" class="h-12 w-auto" alt="Logo">
           <div class="text-left">
-            <span id="ticketBadgeText" class="inline-block bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-amber-500/40 mb-1">طلب حجز - بانتظار موافقة منظم المهرجان</span>
+            <span id="ticketBadgeText" class="inline-block bg-green-500/20 text-green-300 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-green-500/40 mb-1">✓ تمت الموافقة وتثبيت الحجز رسمياً</span>
             <h4 class="text-xs font-bold text-gold-matte">مهرجان نينوى السينمائي الدولي</h4>
             <p class="text-[9px] text-gray-300">الدورة الثانية - 2nd Edition</p>
           </div>
@@ -240,6 +240,10 @@
           <div class="flex justify-between border-b border-white/10 pb-1">
             <span class="text-gray-400">المقعد المخصص:</span>
             <span id="ticketSeatsDisplay" class="font-bold text-gold-matte text-sm">--</span>
+          </div>
+          <div class="flex justify-between border-b border-white/10 pb-1">
+            <span class="text-gray-400">تاريخ ووقت الحجز:</span>
+            <span id="ticketDateDisplay" class="font-bold text-yellow-300 text-xs font-mono">--</span>
           </div>
         </div>
 
@@ -318,12 +322,22 @@
             var catEl = document.getElementById('ticketCategoryDisplay');
             var badgeEl = document.getElementById('ticketBadgeText');
 
+            var dateEl = document.getElementById('ticketDateDisplay');
+
             if (nameEl) nameEl.textContent = paramName;
             if (idEl) idEl.textContent = ticketId;
             if (seatEl) seatEl.textContent = paramSeat;
             if (catEl) catEl.textContent = paramCat;
+            if (dateEl) {
+              try {
+                var opts = { timeZone: 'Asia/Baghdad', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true };
+                dateEl.textContent = new Intl.DateTimeFormat('ar-IQ', opts).format(new Date());
+              } catch(e) {
+                dateEl.textContent = new Date().toLocaleString('ar-IQ');
+              }
+            }
             if (badgeEl) {
-              badgeEl.textContent = 'تذكرة رسمية معتمدة صالحة للدخول ';
+              badgeEl.textContent = '✓ تمت الموافقة وتثبيت الحجز رسمياً';
               badgeEl.className = 'inline-block bg-green-500/20 text-green-300 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-green-500/40 mb-1';
             }
           }

@@ -29,8 +29,11 @@ def create_booking_pdf(booking):
     page1.insert_text(fitz.Point(135, 68), "Mahragan Nineveh Al-Cinemai Al-Dawli - 2nd Edition", fontsize=11, color=(1, 1, 1))
     page1.insert_text(fitz.Point(135, 90), "MASTER REGISTRATION REPORT & SEATS APPROVAL DOCUMENT", fontsize=9, color=(0.8, 0.8, 0.8))
 
+    created_raw = booking.get("createdAt", "")
+    baghdad_time = created_raw[:19].replace("T", " ") + " (Baghdad Time GMT+3)"
+
     page1.draw_rect(fitz.Rect(30, 140, 565, 185), color=(0.77, 0.63, 0.35), fill=(0.15, 0.04, 0.05))
-    page1.insert_text(fitz.Point(45, 168), f"REGISTRATION ID: {ticket_id}  |  STATUS: PENDING ORGANIZER APPROVAL", fontsize=11, color=(1, 0.85, 0.4))
+    page1.insert_text(fitz.Point(45, 168), f"REGISTRATION ID: {ticket_id}  |  STATUS: OFFICIALLY APPROVED & CONFIRMED", fontsize=11, color=(0.3, 0.9, 0.4))
 
     y = 210
     page1.draw_rect(fitz.Rect(30, y, 565, y + 25), color=(0.77, 0.63, 0.35), fill=(0.77, 0.63, 0.35))
@@ -43,10 +46,10 @@ def create_booking_pdf(booking):
         ("Contact Phone", booking.get("phone", "")),
         ("Organizer", "Nineveh Film Festival Committee"),
         ("Category / Type", booking.get("category", "Festival Guest")),
-        ("Organization / Media", booking.get("organization", "-") or "-"),
+        ("Booking Status", "APPROVED - VALID FOR ENTRY"),
         ("Requested Seats Count", str(booking.get("personsCount", 1))),
         ("Assigned Seat Codes", ", ".join(booking.get("seatCodes", []))),
-        ("Registration Timestamp", booking.get("createdAt", "")[:19].replace("T", " "))
+        ("Registration Timestamp", baghdad_time)
     ]
 
     for label, val in details:
@@ -79,13 +82,12 @@ def create_booking_pdf(booking):
         page1.insert_text(fitz.Point(470, y + 14), str(att.get("seatCode", "")), fontsize=9, color=(0.77, 0.63, 0.35))
         y += 20
 
-    # Approval Action Box on Page 1
+    # Official Confirmation Box on Page 1
     y_qr = max(y + 20, 580)
-    approve_url = f"http://localhost:8080/api/admin/approve-email?id={ticket_id}"
-    page1.draw_rect(fitz.Rect(30, y_qr, 565, y_qr + 100), color=(0.77, 0.63, 0.35), fill=(0.98, 0.96, 0.90))
-    page1.insert_text(fitz.Point(45, y_qr + 25), "ORGANIZER APPROVAL ACTION:", fontsize=11, color=(0.11, 0.02, 0.03))
-    page1.insert_text(fitz.Point(45, y_qr + 45), "To approve this booking and permanently lock seats:", fontsize=9, color=(0.2, 0.2, 0.2))
-    page1.insert_text(fitz.Point(45, y_qr + 65), approve_url, fontsize=9, color=(0.7, 0.1, 0.1))
+    page1.draw_rect(fitz.Rect(30, y_qr, 565, y_qr + 80), color=(0.77, 0.63, 0.35), fill=(0.95, 0.98, 0.95))
+    page1.insert_text(fitz.Point(45, y_qr + 25), "OFFICIAL STATUS: CONFIRMED & VALID FOR ENTRY", fontsize=11, color=(0.1, 0.5, 0.2))
+    page1.insert_text(fitz.Point(45, y_qr + 45), "Seats are permanently reserved and locked in the system.", fontsize=9, color=(0.2, 0.2, 0.2))
+    page1.insert_text(fitz.Point(45, y_qr + 62), "Please show the attendee ticket barcodes on subsequent pages at festival entry gates.", fontsize=8, color=(0.3, 0.3, 0.3))
 
     page1.draw_line(fitz.Point(30, 810), fitz.Point(565, 810), color=(0.77, 0.63, 0.35), width=1)
     page1.insert_text(fitz.Point(30, 825), "Nineveh International Film Festival 2nd Edition - Official System Document", fontsize=8, color=(0.5, 0.5, 0.5))
@@ -119,6 +121,7 @@ def create_booking_pdf(booking):
             ("Attendee Seat Code", att.get("seatCode", "")),
             ("Category", att.get("category", "Festival Guest")),
             ("Contact Phone", booking.get("phone", "")),
+            ("Booking Timestamp", baghdad_time),
             ("Master Booking ID", ticket_id)
         ]
 

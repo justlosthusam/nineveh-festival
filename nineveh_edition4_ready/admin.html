@@ -102,16 +102,17 @@ function render(){
   if(filter==='pending') arr=arr.filter(b=>b.status==='pending_approval');
   if(!arr.length){ $('list').innerHTML='<div class="empty">لا توجد طلبات</div>'; return; }
   $('list').innerHTML = arr.map(b=>{
-    const st=b.status==='approved'?['معتمد','b-a']:b.status==='rejected'?['مرفوض','b-r']:['⏳ بانتظار موافقتك','b-p'];
+    const st=b.status==='approved'?['✓ معتمد ومحجوز فوراً','b-a']:b.status==='rejected'?['مرفوض','b-r']:['⏳ بانتظار موافقتك','b-p'];
     const acts = b.status==='pending_approval'
       ? `<button class="green" onclick="act('${esc(b.id)}','approve')">✔ موافقة</button><button class="red" onclick="if(confirm('رفض الطلب وتحرير المقاعد؟'))act('${esc(b.id)}','reject')">✖ رفض</button>`
       : (b.status==='approved' ? `<a class="btn green" target="_blank" href="${waLink(b)}">إرسال واتساب</a>` : '');
+    const dateFormatted = b.createdAt ? new Date(b.createdAt).toLocaleString('ar-IQ', { timeZone: 'Asia/Baghdad', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
     return `<div class="card ${b.status==='pending_approval'?'pending':''} ${b._new?'flash':''}">
       <div class="row"><span class="id">${esc(b.id)}</span><span class="badge ${st[1]}">${st[0]}</span></div>
       <div style="font-weight:800;margin-top:4px">${esc(b.name)}</div>
       <div class="meta">📞 <a style="color:#ccc" href="tel:${esc(b.phone)}">${esc(b.phone)}</a> · ${esc(b.category||'')} ${b.organization?'· '+esc(b.organization):''}</div>
       <div class="seats">${(b.seatCodes||[]).map(esc).join(' ، ')}</div>
-      <div class="meta">${b.createdAt? new Date(b.createdAt).toLocaleString('ar-IQ'):''}</div>
+      <div class="meta">🕒 ${dateFormatted} (توقيت بغداد)</div>
       <div class="acts">${acts}<a class="btn gray" target="_blank" href="/pdfs/${esc(b.id)}.pdf">PDF</a></div>
     </div>`;}).join('');
 }
