@@ -1,0 +1,3 @@
+PUBLIC WEBSITE: https://sie-anne-served-productions.trycloudflare.com
+ADMIN PANEL:    https://sie-anne-served-productions.trycloudflare.com/admin?key=niff_admin_2026
+ADMIN KEY:      niff_admin_2026
